@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Veiling Bied Calculator</title>
+  <style>
+    /* iOS look */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f2f2f7;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #000;
+      margin: 10px 0;
+    }
+    /* Duidelijke scheiding tussen de secties */
+    .section {
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #ccc;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+    input[type="number"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      -webkit-appearance: none;
+      background-color: #fff;
+    }
+    .button-group {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .button-group button {
+      flex: 1;
+      font-size: 18px;
+      padding: 10px;
+      margin: 0 5px;
+      border: none;
+      border-radius: 10px;
+      background-color: #007AFF;
+      color: #fff;
+      -webkit-appearance: none;
+      outline: none;
+    }
+    .button-group button:first-child {
+      margin-left: 0;
+    }
+    .button-group button:last-child {
+      margin-right: 0;
+    }
+    .copy-button {
+      font-size: 16px;
+      padding: 6px 10px;
+      margin-left: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #34C759;
+      color: #fff;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+    .result {
+      font-size: 16px;
+      line-height: 1.4;
+      color: #333;
+      padding: 10px;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+    }
+    @media (max-width: 480px) {
+      h1, h2 {
+        font-size: 22px;
+      }
+      input[type="number"], .result {
+        font-size: 16px;
+      }
+      .button-group button {
+        font-size: 16px;
+        padding: 8px;
+      }
+      .copy-button {
+        font-size: 14px;
+        padding: 6px 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Veiling Bied Calculator</h1>
+
+    <!-- Instellingen voor de extra kosten -->
+    <div class="section">
+      <h2>Instellingen Extra Kosten</h2>
+      <label for="pctBtwBid">Btw op biedingswaarde (%)</label>
+      <input type="number" id="pctBtwBid" value="21" step="0.01" oninput="calculateAll()">
+      
+      <label for="pctAuctionCost">Veilingkosten (%)</label>
+      <input type="number" id="pctAuctionCost" value="19" step="0.01" oninput="calculateAll()">
+      
+      <label for="pctBtwAuction">Btw op veilingkosten (%)</label>
+      <input type="number" id="pctBtwAuction" value="21" step="0.01" oninput="calculateAll()">
+    </div>
+
+    <!-- Aantal Producten -->
+    <div class="section">
+      <h2>Aantal Producten</h2>
+      <label for="quantity">Aantal</label>
+      <input type="number" id="quantity" step="1" value="1" oninput="calculateAll()">
+    </div>
+
+    <!-- Omgekeerde Berekening (bovenaan) -->
+    <div class="section">
+      <h2>Omgekeerde Berekening</h2>
+      <!-- Gewenste Totale prijs per stuk (€) (inc btw en Veilingkosten (€)) -->
+      <label for="totalPrice">Gewenste Totale prijs per stuk (€) (inc btw en Veilingkosten (€))</label>
+      <input type="number" id="totalPrice" step="0.01" placeholder="Voer gewenste prijs per stuk in" oninput="calculateAll()">
+      <div class="button-group">
+        <button type="button" onclick="adjustTotalPrice(-10)">- 10</button>
+        <button type="button" onclick="adjustTotalPrice(10)">+ 10</button>
+      </div>
+      <div class="button-group">
+        <button type="button" onclick="adjustTotalPrice(-1)">- 1</button>
+        <button type="button" onclick="adjustTotalPrice(1)">+ 1</button>
+      </div>
+      <div class="result" id="reverseResult"></div>
+    </div>
+
+    <!-- Voorwaartse Berekening (onderaan) -->
+    <div class="section">
+      <h2>Voorwaartse Berekening</h2>
+      <label for="bidAmount">Totaal Biedbedrag (€)</label>
+      <input type="number" id="bidAmount" step="0.01" placeholder="Voer totaal biedbedrag in" oninput="calculateAll()">
+      <div class="button-group">
+        <button type="button" onclick="adjustBidAmount(-10)">- 10</button>
+        <button type="button" onclick="adjustBidAmount(10)">+ 10</button>
+      </div>
+      <div class="result" id="forwardResult"></div>
+    </div>
+
+    <!-- BTW Voorwaartse Berekening -->
+    <div class="section">
+      <h2>BTW Voorwaartse Berekening</h2>
+      <label for="nettoAmount">Exclusief btw</label>
+      <input type="number" id="nettoAmount" step="0.01" placeholder="Voer exclusief btw in" oninput="calculateBTWForward()">
+      <label for="vatPercentage">BTW percentage (%)</label>
+      <input type="number" id="vatPercentage" step="0.01" placeholder="Voer BTW percentage in" value="21" oninput="calculateBTWForward()">
+      <div class="result" id="vatForwardResult"></div>
+    </div>
+
+    <!-- BTW Omgekeerde Berekening -->
+    <div class="section">
+      <h2>BTW Omgekeerde Berekening</h2>
+      <label for="brutoAmount">Inclusief btw</label>
+      <input type="number" id="brutoAmount" step="0.01" placeholder="Voer inclusief btw in" oninput="calculateBTWReverse()">
+      <label for="vatPercentage2">BTW percentage (%)</label>
+      <input type="number" id="vatPercentage2" step="0.01" placeholder="Voer BTW percentage in" value="21" oninput="calculateBTWReverse()">
+      <div class="result" id="vatReverseResult"></div>
+    </div>
+  </div>
+
+  <script>
+    // Hulpfunctie om een getal met twee decimalen weer te geven met een komma als decimaalscheiding
+    function formatNumber(num) {
+      return num.toFixed(2).replace('.', ',');
+    }
+
+    function getSettings() {
+      var pctBtwBid = parseFloat(document.getElementById("pctBtwBid").value) / 100;
+      var pctAuctionCost = parseFloat(document.getElementById("pctAuctionCost").value) / 100;
+      var pctBtwAuction = parseFloat(document.getElementById("pctBtwAuction").value) / 100;
+      return { pctBtwBid, pctAuctionCost, pctBtwAuction };
+    }
+
+    function getQuantity() {
+      var quantity = parseFloat(document.getElementById("quantity").value);
+      if (isNaN(quantity) || quantity < 1) {
+        quantity = 1;
+      }
+      return quantity;
+    }
+
+    function calculateForward() {
+      var bid = parseFloat(document.getElementById("bidAmount").value);
+      var quantity = getQuantity();
+      var result = "";
+      if (!isNaN(bid)) {
+        var settings = getSettings();
+        var btwBied = bid * settings.pctBtwBid;
+        var veilingkosten = bid * settings.pctAuctionCost;
+        var btwVeilingkosten = veilingkosten * settings.pctBtwAuction;
+        var total = bid + btwBied + veilingkosten + btwVeilingkosten;
+        result += "<p>Btw op biedingswaarde (" + (settings.pctBtwBid * 100).toFixed(2) + "%): " + formatNumber(btwBied) + "</p>";
+        result += "<p>Veilingkosten (" + (settings.pctAuctionCost * 100).toFixed(2) + "%): " + formatNumber(veilingkosten) + "</p>";
+        result += "<p>Btw op veilingkosten (" + (settings.pctBtwAuction * 100).toFixed(2) + "%): " + formatNumber(btwVeilingkosten) + "</p>";
+        result += "<p><strong>Totale biedprijs: " + formatNumber(total) + "</strong></p>";
+        result += "<p>Totale biedprijs per stuk: " + formatNumber(total / quantity) + "</p>";
+      } else {
+        result = "Voer een geldig biedbedrag in.";
+      }
+      document.getElementById("forwardResult").innerHTML = result;
+    }
+
+    function calculateReverse() {
+      var totalPricePerPiece = parseFloat(document.getElementById("totalPrice").value);
+      var quantity = getQuantity();
+      var result = "";
+      if (!isNaN(totalPricePerPiece)) {
+        var overallTotalPrice = totalPricePerPiece * quantity;
+        var settings = getSettings();
+        var factor = 1 + settings.pctBtwBid + settings.pctAuctionCost + (settings.pctAuctionCost * settings.pctBtwAuction);
+        var requiredBid = overallTotalPrice / factor;
+        var btwBied = requiredBid * settings.pctBtwBid;
+        var veilingkosten = requiredBid * settings.pctAuctionCost;
+        var btwVeilingkosten = veilingkosten * settings.pctBtwAuction;
+        var computedTotal = requiredBid + btwBied + veilingkosten + btwVeilingkosten;
+        result += "<p><strong>Benodigd totaal biedbedrag: <span id='requiredBidValue'>" + formatNumber(requiredBid) + "</span></strong> <button class='copy-button' onclick='copyRequiredBid()'>Kopieer</button></p>";
+        result += "<p>Benodigd biedbedrag per stuk: " + formatNumber(requiredBid / quantity) + "</p>";
+        result += "<p>Btw op biedingswaarde (" + (settings.pctBtwBid * 100).toFixed(2) + "%): " + formatNumber(btwBied) + "</p>";
+        result += "<p>Veilingkosten (" + (settings.pctAuctionCost * 100).toFixed(2) + "%): " + formatNumber(veilingkosten) + "</p>";
+        result += "<p>Btw op veilingkosten (" + (settings.pctBtwAuction * 100).toFixed(2) + "%): " + formatNumber(btwVeilingkosten) + "</p>";
+        result += "<p><strong>Totale biedprijs (totaal): " + formatNumber(computedTotal) + "</strong></p>";
+        result += "<p>(Factor: " + factor.toFixed(4) + ")</p>";
+      } else {
+        result = "Voer een geldige totale prijs per stuk in.";
+      }
+      document.getElementById("reverseResult").innerHTML = result;
+    }
+
+    function adjustBidAmount(delta) {
+      var bidInput = document.getElementById("bidAmount");
+      var currentVal = parseFloat(bidInput.value) || 0;
+      var newVal = currentVal + delta;
+      if (newVal < 0) newVal = 0;
+      bidInput.value = newVal.toFixed(2);
+      calculateAll();
+    }
+
+    function adjustTotalPrice(delta) {
+      var totalPriceInput = document.getElementById("totalPrice");
+      var currentVal = parseFloat(totalPriceInput.value) || 0;
+      var newVal = currentVal + delta;
+      if (newVal < 0) newVal = 0;
+      totalPriceInput.value = newVal.toFixed(2);
+      calculateAll();
+    }
+
+    // Kopieer functie zonder popup
+    function copyRequiredBid() {
+      var textToCopy = document.getElementById("requiredBidValue").innerText;
+      navigator.clipboard.writeText(textToCopy).catch(function(err) {
+        console.error("Kopiëren mislukt:", err);
+      });
+    }
+
+    function calculateAll() {
+      calculateReverse();
+      calculateForward();
+    }
+
+    // BTW Voorwaartse Berekening
+    function calculateBTWForward() {
+      var netto = parseFloat(document.getElementById("nettoAmount").value);
+      var vatPercent = parseFloat(document.getElementById("vatPercentage").value) / 100;
+      var result = "";
+      if (!isNaN(netto)) {
+        var vatAmount = netto * vatPercent;
+        var bruto = netto + vatAmount;
+        result += "<p>BTW bedrag: " + formatNumber(vatAmount) + "</p>";
+        result += "<p>Inclusief btw: " + formatNumber(bruto) + "</p>";
+      } else {
+        result = "Voer een geldig exclusief btw bedrag in.";
+      }
+      document.getElementById("vatForwardResult").innerHTML = result;
+    }
+
+    // BTW Omgekeerde Berekening
+    function calculateBTWReverse() {
+      var bruto = parseFloat(document.getElementById("brutoAmount").value);
+      var vatPercent = parseFloat(document.getElementById("vatPercentage2").value) / 100;
+      var result = "";
+      if (!isNaN(bruto)) {
+        var netto = bruto / (1 + vatPercent);
+        var vatAmount = bruto - netto;
+        result += "<p>Exclusief btw: " + formatNumber(netto) + "</p>";
+        result += "<p>BTW bedrag: " + formatNumber(vatAmount) + "</p>";
+      } else {
+        result = "Voer een geldig inclusief btw bedrag in.";
+      }
+      document.getElementById("vatReverseResult").innerHTML = result;
+    }
+
+    calculateAll();
+  </script>
+</body>
+</html>

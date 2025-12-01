@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Thailand Ultimate Guide v14</title>
+    <title>Thailand Ultimate Guide v15</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -12,7 +12,7 @@
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; overflow: hidden; background: #f0f0f0; }
         #map { height: 100vh; width: 100%; z-index: 1; }
         
-        /* --- MENU KNOP --- */
+        /* --- KNOPPEN --- */
         #toggle-btn {
             position: absolute; top: 15px; right: 15px;
             background: #fff; color: #333;
@@ -25,7 +25,6 @@
         }
         #toggle-btn:active { transform: scale(0.95); }
 
-        /* --- RECENTER BUTTON (NIEUW) --- */
         #recenter-btn {
             position: absolute; bottom: 90px; right: 10px;
             background: #fff; color: #333;
@@ -88,10 +87,10 @@
             display: flex; align-items: center; justify-content: center; transform: rotate(45deg); z-index: 10;
         }
         
-        .marker-sight { background-color: #007bff; }   /* Blauw */
-        .marker-food { background-color: #dc3545; }    /* Rood */
-        .marker-activity { background-color: #9c27b0; } /* Paars */
-        .marker-hike { background-color: #28a745; }    /* Groen */
+        .marker-sight { background-color: #007bff; }   
+        .marker-food { background-color: #dc3545; }    
+        .marker-activity { background-color: #9c27b0; } 
+        .marker-hike { background-color: #28a745; }    
         
         .legend-color { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
         .c-sight { background-color: #007bff; } .c-food { background-color: #dc3545; } .c-act { background-color: #9c27b0; } .c-hike { background-color: #28a745; }
@@ -113,7 +112,6 @@
         .popup-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 6px; padding: 10px; font-size: 12px; font-weight: bold; color: white; gap: 6px; transition: opacity 0.2s; }
         .popup-btn:hover { opacity: 0.9; }
         .btn-google { background: #4285F4; } .btn-nav { background: #34A853; } .btn-yt { background: #FF0000; } .btn-wiki { background: #555; }
-        
         .loc-btn { width: 100%; padding: 14px; background: #222; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
     </style>
 </head>
@@ -217,21 +215,24 @@
     <script>
         // --- 1. INITIALISATIE ---
         const isMobile = window.innerWidth < 600;
-        // Start zoom als we nog geen GPS hebben (fallback op Thailand overzicht)
         const initialZoom = isMobile ? 5 : 6;
+        
+        // Zorg dat de kaart ALTIJD initialiseert, ook bij script errors verderop
         const map = L.map('map', { zoomControl: false }).setView([13.0000, 101.5000], initialZoom);
         
-        // Zoom knoppen rechtsonder
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
         function toggleMenu() { document.getElementById('controls').classList.toggle('active'); }
         if(isMobile) document.getElementById('controls').classList.remove('active');
 
-        // --- 2. CHECK DATABASE ---
-        if (typeof locations === 'undefined') {
-            alert("⚠️ DATABASE FOUT: database.js niet gevonden.");
-            var locations = []; 
+        // --- 2. DATABASE CHECK (VEILIGE MODUS) ---
+        // Als database.js ontbreekt of corrupt is, gebruiken we een testlocatie zodat de kaart niet crasht.
+        if (typeof locations === 'undefined' || !Array.isArray(locations)) {
+            console.warn("⚠️ DATABASE FOUT: locations niet gevonden. Gebruik testdata.");
+            var locations = [
+                { id: 9999, name: "Test Locatie (Bangkok)", lat: 13.7563, lng: 100.5018, type: "sight", rank: 1, region: "bangkok", tag: "culture", price: "Gratis", price_thb: 0, desc: "Dit is een testpunt omdat database.js niet geladen kon worden." }
+            ]; 
         }
 
         // --- 3. STATE ---
@@ -240,47 +241,44 @@
         let userLat = null;
         let userLng = null;
         let userMarker = null;
-        let hasCenteredOnce = false; // Check of we al een keer automatisch gezoomd hebben
+        let hasCenteredOnce = false; 
 
         if(localStorage.getItem('calc_thb')) document.getElementById('calcTHB').value = localStorage.getItem('calc_thb');
         if(localStorage.getItem('calc_eur')) document.getElementById('calcEUR').value = localStorage.getItem('calc_eur');
         updateRateDisplay(userRate);
 
         // --- 4. GPS & LOCATIE ---
-        // Start direct met zoeken. setView: false omdat we dit handmatig doen voor betere controle
+        // Start met zoeken
         map.locate({setView: false, watch: true, enableHighAccuracy: true});
 
         map.on('locationfound', function(e) {
             userLat = e.latlng.lat;
             userLng = e.latlng.lng;
             
-            // Blauwe stip updaten
             if (!userMarker) {
                 userMarker = L.circleMarker(e.latlng, { radius: 8, fillColor: "#4285F4", color: "#ffffff", weight: 3, opacity: 1, fillOpacity: 1 }).addTo(map).bindPopup("Jouw Locatie");
             } else { userMarker.setLatLng(e.latlng); }
             
-            // De EERSTE keer dat we locatie vinden: inzoomen naar radius ~20km (Zoom 11)
+            // Auto-zoom naar radius ~20km (Zoom 11) bij eerste fix
             if (!hasCenteredOnce) {
                 map.setView([userLat, userLng], 11);
                 hasCenteredOnce = true;
             }
 
             document.getElementById('user-status').innerText = "GPS Actief ✅";
-            renderMarkers(); 
+            try { renderMarkers(); } catch(e) { console.error("Fout bij renderen:", e); }
         });
         
         map.on('locationerror', function(e) { document.getElementById('user-status').innerText = "GPS niet gevonden ❌"; });
         
-        // Functie voor de nieuwe knop en de sidebar knop
         function locateUserOnMap() { 
             if(userLat && userLng) { 
-                map.setView([userLat, userLng], 11); // Forceer zoom 11 bij klikken
+                map.setView([userLat, userLng], 11); 
             } else { 
                 alert("Nog geen GPS signaal. Zorg dat locatie aanstaat."); 
                 map.locate({setView: true, maxZoom: 11, enableHighAccuracy: true});
             } 
         }
-        // Oude sidebar functie kan verwijzen naar de nieuwe
         function locateUser() { locateUserOnMap(); }
 
         // --- 5. CALCULATOR ---
@@ -322,6 +320,7 @@
         let markers = [];
 
         function renderMarkers() {
+            // Verwijder oude markers
             markers.forEach(m => map.removeLayer(m));
             markers = [];
 
@@ -358,7 +357,10 @@
             };
 
             locations.forEach(loc => {
+                // Veiligheidscheck data
+                if (!loc.lat || !loc.lng) return;
                 if (loc.lat < 5 || loc.lat > 21) return; 
+
                 if (showFavsOnly && !favorites.includes(loc.id)) return;
                 if (!showFavsOnly && loc.rank > maxRank) return;
                 if (searchTerm && !loc.name.toLowerCase().includes(searchTerm)) return;
@@ -367,6 +369,8 @@
                 if (!tagChecked.includes(loc.tag)) return;
 
                 let displayPrice = convertPrice(loc);
+                
+                // Price Filter Logic
                 if (priceFilter !== 'all') {
                     let isFree = displayPrice.includes('Gratis');
                     let priceNum = parseFloat(displayPrice.replace('€ ', ''));
@@ -408,7 +412,7 @@
                 const favClass = isFav ? 'fav-active' : 'fav-inactive';
                 const priceColor = displayPrice.includes('Gratis') ? 'green' : '#333';
 
-                // GECORRIGEERDE LINKS (template strings waren stuk in origineel)
+                // --- URL FIXES ---
                 const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
                 const infoUrl = `https://www.google.com/search?q=${encodeURIComponent(loc.name + " Thailand")}`;
                 const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(loc.name + ' Thailand vlog')}`;
@@ -465,6 +469,7 @@
         });
         document.getElementById('searchInput').addEventListener('keyup', renderMarkers);
 
+        // Start renderen
         renderMarkers();
     </script>
 </body>

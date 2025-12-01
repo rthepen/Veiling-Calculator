@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Thailand Ultimate Guide v14 (Dynamic Prices)</title>
+    <title>Thailand Ultimate Guide v15 (Split Database)</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -96,6 +96,7 @@
         .meta-row { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 12px; font-weight: 600; }
         .distance-tag { display: block; font-size: 11px; color: #666; margin-top: 4px; font-weight: normal; }
 
+        /* KNOPPEN */
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .full-width { grid-column: 1 / -1; }
         .popup-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 6px; padding: 10px; font-size: 12px; font-weight: bold; color: white; gap: 6px; transition: opacity 0.2s; }
@@ -170,7 +171,16 @@
                 <label><input type="checkbox" name="tag" value="culture" checked onchange="renderMarkers()"> 🏛️ Cultuur & Stad</label>
             </div>
 
-            <h4>Prijsklasse (Geschat)</h4>
+            <h4>Regio's</h4>
+            <div class="filter-group">
+                <label><input type="checkbox" name="reg" value="bangkok" checked onchange="renderMarkers()"> Centraal & Bangkok</label>
+                <label><input type="checkbox" name="reg" value="north" checked onchange="renderMarkers()"> Noord (Chiang Mai)</label>
+                <label><input type="checkbox" name="reg" value="south" checked onchange="renderMarkers()"> Zuid (Eilanden)</label>
+                <label><input type="checkbox" name="reg" value="west" checked onchange="renderMarkers()"> West (Kanchanaburi)</label>
+                <label><input type="checkbox" name="reg" value="east" checked onchange="renderMarkers()"> Oost (Pattaya/Isaan)</label>
+            </div>
+
+            <h4>Prijsklasse</h4>
             <select id="priceFilter" onchange="renderMarkers()">
                 <option value="all">Alle prijzen</option>
                 <option value="free">Gratis</option>
@@ -189,205 +199,14 @@
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script src="sights.js"></script>
+    <script src="food.js"></script>
+    <script src="activities.js"></script>
+    <script src="hikes.js"></script>
 
     <script>
-        // --- 1. DATABASE (THB PRIJZEN) ---
-        const locations = [
-            // SIGHTS (Top 50)
-            { id: 101, rank: 1, type: 'sight', tag: 'culture', region: 'bangkok', name: "The Grand Palace", lat: 13.7500, lng: 100.4915, price_thb: 500, desc: "Het officiële verblijf van de koningen van Siam." },
-            { id: 102, rank: 2, type: 'sight', tag: 'culture', region: 'bangkok', name: "Wat Arun", lat: 13.7437, lng: 100.4888, price_thb: 200, desc: "Tempel van de Dageraad, iconisch om zijn centrale toren." },
-            { id: 103, rank: 3, type: 'sight', tag: 'culture', region: 'bangkok', name: "Wat Pho", lat: 13.7465, lng: 100.4933, price_thb: 300, desc: "Huis van de liggende Boeddha en de eerste universiteit." },
-            { id: 104, rank: 4, type: 'sight', tag: 'culture', region: 'bangkok', name: "Chatuchak Weekend Market", lat: 13.7998, lng: 100.5504, price_thb: 0, desc: "Grootste markt ter wereld met 15.000 kraampjes." },
-            { id: 105, rank: 5, type: 'sight', tag: 'culture', region: 'bangkok', name: "Ayutthaya Historical Park", lat: 14.3532, lng: 100.5684, price_thb: 50, desc: "De oude hoofdstad, UNESCO werelderfgoed." },
-            { id: 106, rank: 6, type: 'sight', tag: 'nature', region: 'south', name: "Khao Sok National Park", lat: 8.9135, lng: 98.5309, price_thb: 300, desc: "Oerwoud ouder dan de Amazone met kalksteenmeren." },
-            { id: 107, rank: 7, type: 'sight', tag: 'culture', region: 'bangkok', name: "Damnoen Saduak Market", lat: 13.5195, lng: 99.9577, price_thb: 0, desc: "De beroemdste drijvende markt (boot kost extra)." },
-            { id: 108, rank: 8, type: 'sight', tag: 'culture', region: 'bangkok', name: "Chinatown (Yaowarat)", lat: 13.7410, lng: 100.5085, price_thb: 0, desc: "Bruisend hart van streetfood en handel." },
-            { id: 109, rank: 9, type: 'sight', tag: 'nature', region: 'west', name: "Erawan National Park", lat: 14.3755, lng: 99.1440, price_thb: 300, desc: "Sprookjesachtige waterval met zeven niveaus." },
-            { id: 110, rank: 10, type: 'sight', tag: 'nature', region: 'south', name: "Railay Beach", lat: 8.0110, lng: 98.8373, price_thb: 0, desc: "Kalksteenkliffen en stranden, alleen per boot bereikbaar." },
-            { id: 111, rank: 11, type: 'sight', tag: 'culture', region: 'north', name: "Wat Phra That Doi Suthep", lat: 18.8048, lng: 98.9216, price_thb: 30, desc: "Gouden tempel op een bergtop boven Chiang Mai." },
-            { id: 112, rank: 12, type: 'sight', tag: 'culture', region: 'north', name: "Wat Rong Khun (Witte Tempel)", lat: 19.8243, lng: 99.7632, price_thb: 100, desc: "Moderne kunsttempel, overgang van hel naar hemel." },
-            { id: 113, rank: 13, type: 'sight', tag: 'culture', region: 'north', name: "Sukhothai Historical Park", lat: 17.0163, lng: 99.7036, price_thb: 100, desc: "De eerste hoofdstad van Siam met elegante Boeddha's." },
-            { id: 114, rank: 14, type: 'sight', tag: 'nature', region: 'south', name: "Phang Nga Bay", lat: 8.2855, lng: 98.5093, price_thb: 300, desc: "Baai vol iconische kalksteenrotsen die uit zee rijzen." },
-            { id: 115, rank: 15, type: 'sight', tag: 'culture', region: 'bangkok', name: "Jim Thompson House", lat: 13.7495, lng: 100.5283, price_thb: 200, desc: "Teakhouten huis van de man die Thaise zijde beroemd maakte." },
-            { id: 116, rank: 16, type: 'sight', tag: 'nature', region: 'south', name: "Koh Phi Phi (Maya Bay)", lat: 7.6775, lng: 98.7663, price_thb: 400, desc: "Beroemdste strand van Thailand, bekend van 'The Beach'." },
-            { id: 117, rank: 17, type: 'sight', tag: 'nature', region: 'east', name: "Koh Samet", lat: 12.5683, lng: 101.4526, price_thb: 200, desc: "Witte stranden op reisafstand van Bangkok." },
-            { id: 118, rank: 18, type: 'sight', tag: 'culture', region: 'east', name: "Sanctuary of Truth", lat: 12.9727, lng: 100.8891, price_thb: 500, desc: "Gigantisch houten monument aan zee, volledig handgesneden." },
-            { id: 119, rank: 19, type: 'sight', tag: 'culture', region: 'bangkok', name: "Asiatique The Riverfront", lat: 13.7045, lng: 100.5034, price_thb: 0, desc: "Shoppen en dineren aan de rivier in oude pakhuizen." },
-            { id: 120, rank: 20, type: 'sight', tag: 'nature', region: 'north', name: "Doi Inthanon", lat: 18.5886, lng: 98.4862, price_thb: 300, desc: "Het hoogste punt van Thailand met nevelwouden." },
-            { id: 121, rank: 21, type: 'sight', tag: 'culture', region: 'bangkok', name: "Golden Mount (Wat Saket)", lat: 13.7538, lng: 100.5066, price_thb: 100, desc: "Tempel op een kunstmatige heuvel met uitzicht over oud Bangkok." },
-            { id: 122, rank: 22, type: 'sight', tag: 'culture', region: 'bangkok', name: "MahaNakhon SkyWalk", lat: 13.7224, lng: 100.5283, price_thb: 880, desc: "Glazen vloer op 314 meter hoogte boven de stad." },
-            { id: 123, rank: 23, type: 'sight', tag: 'nature', region: 'north', name: "Elephant Nature Park", lat: 19.2155, lng: 98.8606, price_thb: 2500, desc: "Pionier in ethische olifantenopvang in Chiang Mai." },
-            { id: 124, rank: 24, type: 'sight', tag: 'culture', region: 'bangkok', name: "Lumpini Park", lat: 13.7314, lng: 100.5414, price_thb: 0, desc: "Het groene hart van de stad, vol met varanen." },
-            { id: 125, rank: 25, type: 'sight', tag: 'culture', region: 'west', name: "Dragon Descendants Museum", lat: 14.4776, lng: 100.1106, price_thb: 490, desc: "Enorm drakenmuseum over de Chinees-Thaise geschiedenis." },
-            { id: 126, rank: 26, type: 'sight', tag: 'culture', region: 'bangkok', name: "Erawan Museum", lat: 13.6286, lng: 100.5890, price_thb: 400, desc: "Tempel in een gigantische driehoofdige olifant." },
-            { id: 127, rank: 27, type: 'sight', tag: 'nature', region: 'east', name: "Koh Larn", lat: 12.9213, lng: 100.7776, price_thb: 0, desc: "Koraaleiland met helder water voor de kust van Pattaya." },
-            { id: 128, rank: 28, type: 'sight', tag: 'nature', region: 'east', name: "Koh Chang", lat: 12.0406, lng: 102.3023, price_thb: 200, desc: "Groot, bergachtig eiland met jungle en stranden (NP fee)." },
-            { id: 129, rank: 29, type: 'sight', tag: 'culture', region: 'bangkok', name: "Bangkok Art & Culture Centre", lat: 13.7466, lng: 100.5303, price_thb: 0, desc: "Modern centrum voor hedendaagse kunst en design." },
-            { id: 130, rank: 30, type: 'sight', tag: 'culture', region: 'north', name: "Chiang Mai Night Bazaar", lat: 18.7856, lng: 99.0003, price_thb: 0, desc: "Beroemde avondmarkt voor souvenirs en handwerk." },
-            { id: 134, rank: 34, type: 'sight', tag: 'culture', region: 'north', name: "Wat Chedi Luang", lat: 18.7870, lng: 98.9866, price_thb: 40, desc: "Grote ruïne-stoepa in het centrum van Chiang Mai." },
-            { id: 139, rank: 39, type: 'sight', tag: 'culture', region: 'west', name: "Wat Tham Suea", lat: 13.9535, lng: 99.6053, price_thb: 0, desc: "Enorme Boeddha met uitzicht over de rijstvelden." },
-            { id: 141, rank: 41, type: 'sight', tag: 'culture', region: 'bangkok', name: "Maeklong Railway Market", lat: 13.4075, lng: 99.9987, price_thb: 0, desc: "De markt waar de trein dwars doorheen rijdt." },
-            { id: 142, rank: 42, type: 'sight', tag: 'culture', region: 'bangkok', name: "Bang Pa-In Palace", lat: 14.2323, lng: 100.5796, price_thb: 100, desc: "Zomerpaleis van de koningen met diverse architectuurstijlen." },
-            { id: 143, rank: 43, type: 'sight', tag: 'culture', region: 'north', name: "Wat Chaloem Phra Kiat", lat: 18.7413, lng: 99.5436, price_thb: 200, desc: "Zwevende pagodes op messcherpe kalksteenpieken." },
-            { id: 144, rank: 44, type: 'sight', tag: 'nature', region: 'south', name: "James Bond Island", lat: 8.2750, lng: 98.5000, price_thb: 300, desc: "De beroemde rots uit 'The Man with the Golden Gun'." },
-            { id: 145, rank: 45, type: 'sight', tag: 'nature', region: 'north', name: "Mae Hong Son Loop", lat: 19.3020, lng: 97.9654, price_thb: 0, desc: "Beroemde motorroute met 1864 bochten door de bergen." },
-            { id: 147, rank: 47, type: 'sight', tag: 'culture', region: 'south', name: "Big Buddha Phuket", lat: 7.8276, lng: 98.3126, price_thb: 0, desc: "Enorm wit marmeren beeld op een heuveltop." },
-            { id: 148, rank: 48, type: 'sight', tag: 'nature', region: 'east', name: "Nong Nooch Garden", lat: 12.7663, lng: 100.9335, price_thb: 500, desc: "Prachtig aangelegde botanische tuinen in Pattaya." },
-            { id: 150, rank: 50, type: 'sight', tag: 'culture', region: 'bangkok', name: "MOCA Bangkok", lat: 13.8523, lng: 100.5627, price_thb: 250, desc: "Indrukwekkende collectie moderne Thaise kunst." },
-
-            // FOOD (Top 50 - National Ranking)
-            { id: 201, rank: 1, type: 'food', tag: 'culture', region: 'bangkok', name: "Raan Jay Fai", lat: 13.7525, lng: 100.5048, price_thb: 1200, desc: "Michelin streetfood icoon, beroemd om de krabomelet." },
-            { id: 202, rank: 2, type: 'food', tag: 'culture', region: 'bangkok', name: "Sorn", lat: 13.7268, lng: 100.5698, price_thb: 6500, desc: "2-sterren Zuid-Thaise fine dining, extreem pittig." },
-            { id: 203, rank: 3, type: 'food', tag: 'culture', region: 'bangkok', name: "Nusara", lat: 13.7450, lng: 100.4920, price_thb: 4500, desc: "Authentieke familierecepten met uitzicht op Wat Pho." },
-            { id: 204, rank: 4, type: 'food', tag: 'culture', region: 'bangkok', name: "Sühring", lat: 13.7205, lng: 100.5440, price_thb: 7500, desc: "Moderne Duitse topgastronomie in een tropische villa." },
-            { id: 205, rank: 5, type: 'food', tag: 'culture', region: 'bangkok', name: "Potong", lat: 13.7380, lng: 100.5090, price_thb: 5500, desc: "Progressieve Thais-Chinese keuken in Chinatown." },
-            { id: 206, rank: 6, type: 'food', tag: 'culture', region: 'bangkok', name: "Baan Tepa", lat: 13.7570, lng: 100.6130, price_thb: 6200, desc: "Duurzaam 'farm-to-table' concept in een historisch huis." },
-            { id: 207, rank: 7, type: 'food', tag: 'culture', region: 'bangkok', name: "Le Du", lat: 13.7230, lng: 100.5290, price_thb: 4500, desc: "Moderne Thaise gerechten op basis van seizoensingrediënten." },
-            { id: 208, rank: 8, type: 'food', tag: 'culture', region: 'bangkok', name: "Samrub Samrub Thai", lat: 13.7240, lng: 100.5230, price_thb: 3900, desc: "Vergeten oude Thaise recepten nieuw leven ingeblazen." },
-            { id: 209, rank: 9, type: 'food', tag: 'culture', region: 'bangkok', name: "Wattana Panich", lat: 13.7341, lng: 100.5876, price_thb: 150, desc: "Rundvleessoep die al meer dan 40 jaar continu suddert." },
-            { id: 210, rank: 10, type: 'food', tag: 'culture', region: 'bangkok', name: "Gaa", lat: 13.7320, lng: 100.5790, price_thb: 4700, desc: "Innovatieve Indiase smaken met lokale Thaise ingrediënten." },
-            { id: 211, rank: 11, type: 'food', tag: 'culture', region: 'bangkok', name: "Chef's Table", lat: 13.7214, lng: 100.5170, price_thb: 9200, desc: "Franse haute cuisine met panoramisch uitzicht." },
-            { id: 212, rank: 12, type: 'food', tag: 'culture', region: 'bangkok', name: "Mezzaluna", lat: 13.7214, lng: 100.5170, price_thb: 8000, desc: "Europese topgastronomie op de 65e verdieping." },
-            { id: 213, rank: 13, type: 'food', tag: 'culture', region: 'bangkok', name: "R-Haan", lat: 13.7340, lng: 100.5820, price_thb: 5200, desc: "Koninklijke Thaise keuken met Michelinsterren." },
-            { id: 214, rank: 14, type: 'food', tag: 'culture', region: 'bangkok', name: "Haoma", lat: 13.7380, lng: 100.5650, price_thb: 3500, desc: "Neo-Indiase keuken met focus op duurzaamheid." },
-            { id: 215, rank: 15, type: 'food', tag: 'culture', region: 'south', name: "PRU", lat: 8.0368, lng: 98.2773, price_thb: 7200, desc: "Phukets eerste Michelinster (Farm-to-Table)." },
-            { id: 216, rank: 16, type: 'food', tag: 'culture', region: 'bangkok', name: "Côte by Mauro Colagreco", lat: 13.7127, lng: 100.5132, price_thb: 6500, desc: "Riviera-geïnspireerde keuken aan de Chao Phraya." },
-            { id: 217, rank: 17, type: 'food', tag: 'culture', region: 'bangkok', name: "Blue by Alain Ducasse", lat: 13.7265, lng: 100.5105, price_thb: 5500, desc: "Franse elegantie en meesterlijke technieken." },
-            { id: 218, rank: 18, type: 'food', tag: 'culture', region: 'bangkok', name: "Aksorn", lat: 13.7262, lng: 100.5152, price_thb: 3800, desc: "Gerechten uit kookboeken van de jaren 40-70." },
-            { id: 219, rank: 19, type: 'food', tag: 'culture', region: 'bangkok', name: "Igniv", lat: 13.7416, lng: 100.5404, price_thb: 4500, desc: "Moderne Europese gerechten om te delen." },
-            { id: 220, rank: 20, type: 'food', tag: 'culture', region: 'bangkok', name: "Maison Dunand", lat: 13.7229, lng: 100.5262, price_thb: 4900, desc: "Klassieke Franse keuken geïnspireerd door de Alpen." },
-            { id: 221, rank: 21, type: 'food', tag: 'culture', region: 'bangkok', name: "Elements", lat: 13.7432, lng: 100.5475, price_thb: 4800, desc: "Franse keuken met Japanse invloeden." },
-            { id: 222, rank: 22, type: 'food', tag: 'culture', region: 'bangkok', name: "Wana Yook", lat: 13.7681, lng: 100.5283, price_thb: 3500, desc: "Verfijnde versie van de traditionele curry-rijst." },
-            { id: 223, rank: 23, type: 'food', tag: 'culture', region: 'bangkok', name: "Signature", lat: 13.7462, lng: 100.5348, price_thb: 4200, desc: "Bloemen en kruiden staan centraal." },
-            { id: 224, rank: 24, type: 'food', tag: 'culture', region: 'bangkok', name: "Nahm", lat: 13.7227, lng: 100.5375, price_thb: 3500, desc: "Pionier van de authentieke Thaise fine dining." },
-            { id: 225, rank: 25, type: 'food', tag: 'culture', region: 'bangkok', name: "Chim by Siam Wisdom", lat: 13.7371, lng: 100.5641, price_thb: 2800, desc: "Mix van traditionele en moderne Thaise technieken." },
-            { id: 226, rank: 26, type: 'food', tag: 'culture', region: 'bangkok', name: "Canvas", lat: 13.7334, lng: 100.5822, price_thb: 4500, desc: "Gerechten als kleurrijke kunstwerken op het bord." },
-            { id: 227, rank: 27, type: 'food', tag: 'culture', region: 'bangkok', name: "80/20", lat: 13.7297, lng: 100.5161, price_thb: 3500, desc: "Innovatieve Thaise keuken met lokale ingrediënten." },
-            { id: 228, rank: 28, type: 'food', tag: 'culture', region: 'bangkok', name: "Cadence by Dan Bark", lat: 13.7335, lng: 100.5862, price_thb: 4800, desc: "Progressieve Amerikaanse keuken met Aziatische invloeden." },
-            { id: 229, rank: 29, type: 'food', tag: 'culture', region: 'bangkok', name: "Jhol", lat: 13.7275, lng: 100.5639, price_thb: 2200, desc: "Zuid-Indiase kustgerechten met een moderne twist." },
-            { id: 230, rank: 30, type: 'food', tag: 'culture', region: 'bangkok', name: "Inddee", lat: 13.7368, lng: 100.5447, price_thb: 3200, desc: "Creatieve Indiase gerechten in een sfeervolle setting." },
-            { id: 231, rank: 31, type: 'food', tag: 'culture', region: 'bangkok', name: "Resonance", lat: 13.7303, lng: 100.5898, price_thb: 4200, desc: "Experimentele keuken die grenzen verlegt." },
-            { id: 232, rank: 32, type: 'food', tag: 'culture', region: 'bangkok', name: "Nawa", lat: 13.7341, lng: 100.5815, price_thb: 3200, desc: "Moderne interpretatie van de Centraal-Thaise keuken." },
-            { id: 233, rank: 33, type: 'food', tag: 'culture', region: 'bangkok', name: "Mia", lat: 13.7253, lng: 100.5732, price_thb: 4880, desc: "Moderne Europese gerechten om te delen." },
-            { id: 234, rank: 34, type: 'food', tag: 'culture', region: 'bangkok', name: "Clara", lat: 13.7042, lng: 100.5398, price_thb: 3680, desc: "Moderne Italiaanse keuken in een prachtige villa." },
-            { id: 235, rank: 35, type: 'food', tag: 'culture', region: 'bangkok', name: "Acqua Bangkok", lat: 13.7423, lng: 100.5478, price_thb: 3500, desc: "Verfijnde Italiaanse zeevruchten gerechten." },
-            { id: 236, rank: 36, type: 'food', tag: 'culture', region: 'south', name: "Samut", lat: 7.7946, lng: 98.3195, price_thb: 3990, desc: "Zuid-Thaise zeevruchten in een intieme setting." },
-            { id: 237, rank: 37, type: 'food', tag: 'culture', region: 'south', name: "Jampa", lat: 8.0211, lng: 98.2868, price_thb: 2900, desc: "Duurzame 'zero waste' filosofie op Phuket." },
-            { id: 238, rank: 38, type: 'food', tag: 'culture', region: 'south', name: "L'Arôme by the Sea", lat: 7.9152, lng: 98.2932, price_thb: 4500, desc: "Franse gastronomie met uitzicht op de Andamanse Zee." },
-            { id: 239, rank: 39, type: 'food', tag: 'culture', region: 'south', name: "Royd", lat: 7.8868, lng: 98.3885, price_thb: 3500, desc: "Innovatieve interpretatie van de lokale Phuket keuken." },
-            { id: 240, rank: 40, type: 'food', tag: 'culture', region: 'north', name: "Blackitch Artisan Kitchen", lat: 18.7980, lng: 98.9695, price_thb: 2590, desc: "Ambachtelijke keuken met fermentatie en lokale ingrediënten." },
-            { id: 241, rank: 41, type: 'food', tag: 'culture', region: 'north', name: "Cuisine de Garden", lat: 18.7429, lng: 98.9282, price_thb: 2000, desc: "Op de natuur geïnspireerde gerechten (Chiang Mai)." },
-            { id: 242, rank: 42, type: 'food', tag: 'culture', region: 'east', name: "Kaen", lat: 16.4429, lng: 102.8282, price_thb: 1500, desc: "Moderne Isan-keuken in Khon Kaen." },
-            { id: 243, rank: 43, type: 'food', tag: 'culture', region: 'east', name: "Samuay & Sons", lat: 17.4093, lng: 102.7981, price_thb: 1800, desc: "Herinterpretatie van de Noord-Oostelijke keuken." },
-            { id: 244, rank: 44, type: 'food', tag: 'culture', region: 'bangkok', name: "100 Mahaseth", lat: 13.7294, lng: 100.5159, price_thb: 1000, desc: "Nose-to-tail dineren met focus op lokaal vlees." },
-            { id: 245, rank: 45, type: 'food', tag: 'culture', region: 'bangkok', name: "Sri Trat", lat: 13.7327, lng: 100.5673, price_thb: 1200, desc: "Authentieke gerechten uit Oost-Thailand." },
-            { id: 246, rank: 46, type: 'food', tag: 'culture', region: 'bangkok', name: "Khua Kling Pak Sod", lat: 13.7381, lng: 100.5798, price_thb: 800, desc: "Extreem pittige Zuid-Thaise curries." },
-            { id: 247, rank: 47, type: 'food', tag: 'culture', region: 'bangkok', name: "Baan Ice", lat: 13.7331, lng: 100.5819, price_thb: 700, desc: "Familierestaurant met Zuid-Thaise klassiekers." },
-            { id: 248, rank: 48, type: 'food', tag: 'culture', region: 'bangkok', name: "The Local", lat: 13.7391, lng: 100.5613, price_thb: 1500, desc: "Traditionele gerechten in een koloniaal huis." },
-            { id: 249, rank: 49, type: 'food', tag: 'culture', region: 'bangkok', name: "Thipsamai Pad Thai", lat: 13.7527, lng: 100.5048, price_thb: 150, desc: "Beroemde Pad Thai verpakt in ei." },
-            { id: 250, rank: 50, type: 'food', tag: 'culture', region: 'bangkok', name: "Guay Jub Ouan Pochana", lat: 13.7408, lng: 100.5094, price_thb: 100, desc: "Peperige noedelsoep met krokante varkensbuik." },
-
-            // ACTIVITIES (Top 50)
-            { id: 301, rank: 1, type: 'activity', tag: 'culture', region: 'bangkok', name: "Thaise Massage (Wat Pho)", lat: 13.7460, lng: 100.4930, price_thb: 450, desc: "De bakermat van de traditionele massage." },
-            { id: 302, rank: 2, type: 'activity', tag: 'nature', region: 'north', name: "Elephant Nature Park", lat: 19.2155, lng: 98.8606, price_thb: 2500, desc: "Pionier in ethische olifantenopvang." },
-            { id: 303, rank: 3, type: 'activity', tag: 'culture', region: 'north', name: "Monk Chat (Wat Chedi Luang)", lat: 18.7870, lng: 98.9866, price_thb: 0, desc: "Praat met monniken over het leven." },
-            { id: 304, rank: 4, type: 'activity', tag: 'culture', region: 'bangkok', name: "Muay Thai Training", lat: 13.7607, lng: 100.5085, price_thb: 800, desc: "Train de nationale vechtsport." },
-            { id: 305, rank: 5, type: 'activity', tag: 'culture', region: 'bangkok', name: "Kookcursus (Blue Elephant)", lat: 13.7196, lng: 100.5161, price_thb: 2800, desc: "High-end kookschool met marktbezoek." },
-            { id: 306, rank: 6, type: 'activity', tag: 'nature', region: 'south', name: "Duikcursus (Koh Tao)", lat: 10.0956, lng: 99.8404, price_thb: 11000, desc: "De goedkoopste plek voor PADI Open Water." },
-            { id: 307, rank: 7, type: 'activity', tag: 'nature', region: 'south', name: "Zeekajakken Phang Nga", lat: 8.2747, lng: 98.5012, price_thb: 1500, desc: "Verken grotten en lagunes per kano." },
-            { id: 308, rank: 8, type: 'activity', tag: 'culture', region: 'north', name: "Bamboe Weven (Bo Sang)", lat: 18.7633, lng: 99.0833, price_thb: 400, desc: "Schilder je eigen parasol." },
-            { id: 309, rank: 9, type: 'activity', tag: 'nature', region: 'south', name: "Gibbon Rehabilitation Project", lat: 8.0366, lng: 98.3644, price_thb: 0, desc: "Bezoek gerehabiliteerde gibbons." },
-            { id: 310, rank: 10, type: 'activity', tag: 'nature', region: 'south', name: "Soi Dog Foundation", lat: 8.1633, lng: 98.2933, price_thb: 0, desc: "Knuffel en verzorg geredde honden." },
-            { id: 311, rank: 11, type: 'activity', tag: 'nature', region: 'south', name: "Bioluminescent Plankton", lat: 8.0333, lng: 98.8167, price_thb: 800, desc: "Zwem in het donker met lichtgevend plankton." },
-            { id: 312, rank: 12, type: 'activity', tag: 'culture', region: 'bangkok', name: "Co van Kessel Fietstour", lat: 13.7300, lng: 100.5100, price_thb: 1800, desc: "Fiets door de steegjes van Chinatown." },
-            { id: 313, rank: 13, type: 'activity', tag: 'nature', region: 'west', name: "Erawan Zwemmen", lat: 14.3755, lng: 99.1440, price_thb: 300, desc: "Zwem in smaragdgroene watervallen." },
-            { id: 314, rank: 14, type: 'activity', tag: 'culture', region: 'south', name: "Full Moon Party", lat: 9.6766, lng: 100.0631, price_thb: 200, desc: "Beroemdste strandfeest ter wereld." },
-            { id: 315, rank: 15, type: 'activity', tag: 'culture', region: 'north', name: "Vipassana Meditatie", lat: 18.7756, lng: 98.9503, price_thb: 0, desc: "Intensieve meditatiecursus in een klooster." },
-            { id: 316, rank: 16, type: 'activity', tag: 'nature', region: 'south', name: "Rotsklimmen Railay", lat: 8.0110, lng: 98.8373, price_thb: 1200, desc: "Klim op kliffen boven de zee." },
-            { id: 317, rank: 17, type: 'activity', tag: 'culture', region: 'bangkok', name: "Sak Yant Tattoo", lat: 13.9168, lng: 100.2078, price_thb: 0, desc: "Heilige tatoeage door monniken (donatie)." },
-            { id: 318, rank: 18, type: 'activity', tag: 'nature', region: 'south', name: "Duiken Richelieu Rock", lat: 9.3667, lng: 98.0217, price_thb: 5500, desc: "Spot walvishaaien (seizoensgebonden)." },
-            { id: 319, rank: 19, type: 'activity', tag: 'culture', region: 'bangkok', name: "Khlong Boottocht", lat: 13.7622, lng: 100.4735, price_thb: 800, desc: "Verken het 'Venetië van het Oosten'." },
-            { id: 320, rank: 20, type: 'activity', tag: 'nature', region: 'west', name: "Bamboe Raften", lat: 14.1500, lng: 99.4000, price_thb: 500, desc: "Zak de rivier af op een vlot." },
-            { id: 321, rank: 21, type: 'activity', tag: 'culture', region: 'bangkok', name: "Onsen & Spa", lat: 13.7250, lng: 100.5700, price_thb: 950, desc: "Authentiek Japans badhuis in Bangkok." },
-            { id: 322, rank: 22, type: 'activity', tag: 'culture', region: 'north', name: "Zilver Slaan", lat: 18.7750, lng: 98.9833, price_thb: 1500, desc: "Workshop zilver bewerken." },
-            { id: 323, rank: 23, type: 'activity', tag: 'culture', region: 'south', name: "Cabaret Show", lat: 12.9493, lng: 100.8884, price: "€ 1000", desc: "Spectaculaire ladyboy show." },
-            { id: 324, rank: 24, type: 'activity', tag: 'nature', region: 'south', name: "Kitesurfen Hua Hin", lat: 12.5500, lng: 99.9600, price: "€ 1500", desc: "Leer kitesurfen op de beste windplek." },
-            { id: 325, rank: 25, type: 'activity', tag: 'culture', region: 'east', name: "Fruit Carving", lat: 13.7200, lng: 100.5200, price: "€ 1200", desc: "Leer de koninklijke kunst van fruit snijden." },
-            { id: 326, rank: 26, type: 'activity', tag: 'nature', region: 'south', name: "Yoga Retreat", lat: 9.7500, lng: 100.0000, price: "€ 400", desc: "Yoga op Koh Phangan." },
-            { id: 327, rank: 27, type: 'activity', tag: 'culture', region: 'bangkok', name: "Blind Massage", lat: 13.7240, lng: 100.5280, price: "€ 350", desc: "Massage door blinde therapeuten." },
-            { id: 328, rank: 28, type: 'activity', tag: 'nature', region: 'south', name: "Wakeboarden", lat: 13.9575, lng: 100.7300, price: "€ 1000", desc: "Wereldklasse cable park." },
-            { id: 329, rank: 29, type: 'activity', tag: 'nature', region: 'north', name: "Zipline", lat: 18.8500, lng: 99.1000, price: "€ 3000", desc: "Zweef door het oerwoud." },
-            { id: 330, rank: 30, type: 'activity', tag: 'culture', region: 'bangkok', name: "Muay Thai Kijken", lat: 13.8690, lng: 100.6010, price: "€ 2000", desc: "Ervaar de sfeer in het Lumpinee stadion." },
-            { id: 331, rank: 31, type: 'activity', tag: 'culture', region: 'bangkok', name: "Amuletten Markt", lat: 13.7550, lng: 100.4900, price: "Gratis", desc: "Struin langs duizenden geluksamuletten." },
-            { id: 332, rank: 32, type: 'activity', tag: 'culture', region: 'bangkok', name: "Bloemenmarkt", lat: 13.7400, lng: 100.5000, price: "Gratis", desc: "Bezoek 's nachts voor de meeste actie." },
-            { id: 333, rank: 33, type: 'activity', tag: 'nature', region: 'west', name: "SUP Boarden", lat: 14.0400, lng: 99.5000, price: "€ 600", desc: "Paddleboarden over de River Kwai." },
-            { id: 334, rank: 34, type: 'activity', tag: 'culture', region: 'north', name: "Keramiek Workshop", lat: 18.7500, lng: 99.0000, price: "€ 1000", desc: "Maak je eigen Celadon-aardewerk." },
-            { id: 335, rank: 35, type: 'activity', tag: 'nature', region: 'south', name: "Snorkelen Koh Lipe", lat: 6.4884, lng: 99.3039, price: "€ 800", desc: "Snorkelen vanaf het strand." },
-            { id: 336, rank: 36, type: 'activity', tag: 'culture', region: 'bangkok', name: "Rooftop Bar", lat: 13.7224, lng: 100.5800, price: "€ 500", desc: "Cocktails met uitzicht." },
-            { id: 337, rank: 37, type: 'activity', tag: 'nature', region: 'east', name: "Buffel Race", lat: 13.3600, lng: 100.9800, price: "Gratis", desc: "Uniek festival in Chonburi." },
-            { id: 338, rank: 38, type: 'activity', tag: 'culture', region: 'north', name: "Thee Plukken", lat: 20.1667, lng: 99.6167, price: "€ 200", desc: "Pluk Oolong thee in Doi Mae Salong." },
-            { id: 339, rank: 39, type: 'activity', tag: 'nature', region: 'south', name: "Inktvis Vissen", lat: 12.5000, lng: 101.5000, price: "€ 800", desc: "Nachtvissen op zee." },
-            { id: 340, rank: 40, type: 'activity', tag: 'nature', region: 'bangkok', name: "Varanen Spotten", lat: 13.7314, lng: 100.5414, price: "Gratis", desc: "Zoek hagedissen in Lumpini Park." },
-            { id: 341, rank: 41, type: 'activity', tag: 'culture', region: 'north', name: "Saa Papier Maken", lat: 18.7700, lng: 99.0500, price: "€ 300", desc: "Maak papier van boomschors." },
-            { id: 342, rank: 42, type: 'activity', tag: 'nature', region: 'west', name: "Olifantenbad", lat: 14.1000, lng: 99.4000, price: "€ 2000", desc: "Zie olifanten spelen in de rivier." },
-            { id: 343, rank: 43, type: 'activity', tag: 'culture', region: 'bangkok', name: "Midnight Food Tour", lat: 13.7500, lng: 100.5000, price: "€ 2200", desc: "TukTuk tour langs eettentjes." },
-            { id: 344, rank: 44, type: 'activity', tag: 'nature', region: 'south', name: "Schildpadden Opvang", lat: 8.5000, lng: 98.2500, price: "€ 100", desc: "Bezoek het conservatiecentrum." },
-            { id: 345, rank: 45, type: 'activity', tag: 'culture', region: 'east', name: "Zijde Weven", lat: 15.0000, lng: 102.0000, price: "Gratis", desc: "Bezoek een zijdorp in de Isaan." },
-            { id: 346, rank: 46, type: 'activity', tag: 'nature', region: 'north', name: "Rijst Planten", lat: 19.0000, lng: 98.5000, price: "€ 500", desc: "Leer rijst planten in de modder." },
-            { id: 347, rank: 47, type: 'activity', tag: 'culture', region: 'south', name: "Schaduwpoppenspel", lat: 8.4300, lng: 99.9600, price: "€ 200", desc: "Traditioneel theater in het zuiden." },
-            { id: 348, rank: 48, type: 'activity', tag: 'nature', region: 'west', name: "Vleermuizen Grot", lat: 13.7000, lng: 99.8000, price: "Gratis", desc: "Zie miljoenen vleermuizen uitvliegen." },
-            { id: 349, rank: 49, type: 'activity', tag: 'culture', region: 'bangkok', name: "Vipassana Intro", lat: 13.7500, lng: 100.4800, price: "Donatie", desc: "Meditatieles bij Wat Mahathat." },
-            { id: 350, rank: 50, type: 'activity', tag: 'culture', region: 'bangkok', name: "Muang Boran Fietsen", lat: 13.5390, lng: 100.6226, price: "€ 700", desc: "Fiets door 'The Ancient City'." },
-
-            // HIKES (Top 50)
-            { id: 601, rank: 1, type: 'hike', tag: 'nature', region: 'north', name: "Kew Mae Pan Nature Trail", lat: 18.5559, lng: 98.4822, price_thb: 500, desc: "Spectaculair pad langs de bergkam op de hoogste top van Thailand." },
-            { id: 602, rank: 2, type: 'hike', tag: 'nature', region: 'north', name: "Ang Ka Nature Trail", lat: 18.5886, lng: 98.4862, price_thb: 300, desc: "Vlonderpad door een oeroud mosbos." },
-            { id: 603, rank: 3, type: 'hike', tag: 'nature', region: 'north', name: "Doi Luang Chiang Dao", lat: 19.3975, lng: 98.8839, price_thb: 1500, desc: "Zware kalksteenbeklimming." },
-            { id: 604, rank: 4, type: 'hike', tag: 'nature', region: 'north', name: "Monk's Trail (Wat Pha Lat)", lat: 18.7993, lng: 98.9436, price_thb: 0, desc: "Pelgrimspad naar tempel." },
-            { id: 605, rank: 5, type: 'hike', tag: 'nature', region: 'north', name: "Pha Dok Siew", lat: 18.5332, lng: 98.5333, price_thb: 200, desc: "Rijstterrassen en watervallen." },
-            { id: 606, rank: 6, type: 'hike', tag: 'nature', region: 'north', name: "Phu Chi Fa", lat: 19.8506, lng: 100.4533, price_thb: 0, desc: "Zonsopgang op klifrand." },
-            { id: 607, rank: 7, type: 'hike', tag: 'nature', region: 'north', name: "Pai Canyon", lat: 19.3067, lng: 98.4530, price_thb: 0, desc: "Smalle zandsteenruggen." },
-            { id: 608, rank: 8, type: 'hike', tag: 'nature', region: 'north', name: "Doi Suthep Summit", lat: 18.8000, lng: 98.9000, price_thb: 0, desc: "Steile jungletocht." },
-            { id: 609, rank: 9, type: 'hike', tag: 'nature', region: 'north', name: "Huay Tung Tao", lat: 18.8667, lng: 98.9333, price_thb: 50, desc: "Meer lus." },
-            { id: 610, rank: 10, type: 'hike', tag: 'nature', region: 'north', name: "Doi Pui Nature Trail", lat: 18.8164, lng: 98.8925, price_thb: 0, desc: "Dennenbossen." },
-            { id: 611, rank: 11, type: 'hike', tag: 'nature', region: 'north', name: "Khun Korn Waterfall", lat: 19.8667, lng: 99.5833, price_thb: 0, desc: "Hoogste waterval Chiang Rai." },
-            { id: 612, rank: 12, type: 'hike', tag: 'nature', region: 'north', name: "Doi Mon Jong", lat: 17.5503, lng: 98.5367, price_thb: 3000, desc: "Gouden grasruggen." },
-            { id: 613, rank: 13, type: 'hike', tag: 'nature', region: 'north', name: "Doi Pha Hom Pok", lat: 20.0433, lng: 99.1436, price_thb: 300, desc: "2e hoogste berg." },
-            { id: 614, rank: 14, type: 'hike', tag: 'nature', region: 'north', name: "Tham Lod Cave", lat: 19.5675, lng: 98.2783, price_thb: 450, desc: "Grotten en vlotten." },
-            { id: 615, rank: 15, type: 'hike', tag: 'nature', region: 'north', name: "Doi Samer Dao", lat: 18.3697, lng: 100.4939, price_thb: 100, desc: "Sterrenkijken." },
-            { id: 616, rank: 16, type: 'hike', tag: 'nature', region: 'north', name: "Phu Langka", lat: 19.3333, lng: 100.5167, price_thb: 0, desc: "Magic Mountain." },
-            { id: 617, rank: 17, type: 'hike', tag: 'nature', region: 'north', name: "Doi Phu Kha 1715", lat: 19.2000, lng: 101.0833, price_thb: 200, desc: "Zeldzame bloemen." },
-            { id: 618, rank: 18, type: 'hike', tag: 'nature', region: 'north', name: "Huay Nam Dang Trail", lat: 19.3039, lng: 98.5975, price_thb: 300, desc: "Pijnbomen en mistige uitzichtpunten." },
-            { id: 619, rank: 19, type: 'hike', tag: 'nature', region: 'north', name: "Doi Tung Tree Top Walk", lat: 20.2886, lng: 99.8114, price_thb: 150, desc: "Hangbrugwandeling door koninklijke tuinen." },
-            { id: 620, rank: 20, type: 'hike', tag: 'nature', region: 'north', name: "Mae Sa Waterfall", lat: 18.9056, lng: 98.8589, price_thb: 100, desc: "Waterval met 10 niveaus." },
-            { id: 626, rank: 26, type: 'hike', tag: 'culture', region: 'north', name: "Wat Chalermprakiat", lat: 18.7414, lng: 99.5394, price_thb: 200, desc: "Klim naar witte pagodes op kalksteentoppen." },
-            { id: 632, rank: 32, type: 'hike', tag: 'nature', region: 'north', name: "Sticky Waterfalls", lat: 19.0667, lng: 99.0833, price_thb: 0, desc: "Klimmen in de waterval." },
-            { id: 651, rank: 51, type: 'hike', tag: 'nature', region: 'east', name: "Phu Kradueng Summit", lat: 16.8833, lng: 101.7833, price_thb: 400, desc: "Zware klim naar tafelberg." },
-            { id: 652, rank: 52, type: 'hike', tag: 'nature', region: 'east', name: "Pha Lom Sak", lat: 16.8667, lng: 101.7667, price_thb: 0, desc: "Zonsondergang klif." },
-            { id: 653, rank: 53, type: 'hike', tag: 'nature', region: 'east', name: "Three Whale Rock", lat: 18.2575, lng: 103.8058, price_thb: 0, desc: "Walvis rotsen." },
-            { id: 654, rank: 54, type: 'hike', tag: 'nature', region: 'east', name: "Sam Pan Bok", lat: 15.7950, lng: 105.3922, price_thb: 0, desc: "Grand Canyon van Thailand." },
-            { id: 655, rank: 55, type: 'hike', tag: 'nature', region: 'east', name: "Pha Taem", lat: 15.3992, lng: 105.5064, price_thb: 400, desc: "Rotstekeningen." },
-            { id: 656, rank: 56, type: 'hike', tag: 'culture', region: 'east', name: "Wat Phu Tok", lat: 18.1325, lng: 103.8822, price_thb: 0, desc: "Houten loopbruggen." },
-            { id: 657, rank: 57, type: 'hike', tag: 'nature', region: 'east', name: "Naga Cave", lat: 17.9592, lng: 104.0531, price_thb: 200, desc: "Slang rots." },
-            { id: 701, rank: 101, type: 'hike', tag: 'nature', region: 'west', name: "Erawan Tier 7", lat: 14.3683, lng: 99.1439, price_thb: 300, desc: "Top van de waterval." },
-            { id: 702, rank: 102, type: 'hike', tag: 'nature', region: 'west', name: "Khao Chang Phueak", lat: 14.7000, lng: 98.6000, price_thb: 200, desc: "Gevaarlijke bergkam." },
-            { id: 703, rank: 103, type: 'hike', tag: 'culture', region: 'west', name: "Hellfire Pass", lat: 14.3528, lng: 98.9536, price_thb: 0, desc: "Spoorweg kloof." },
-            { id: 705, rank: 105, type: 'hike', tag: 'nature', region: 'bangkok', name: "Bang Kachao", lat: 13.6833, lng: 100.5667, price_thb: 0, desc: "Groene long." },
-            { id: 706, rank: 106, type: 'hike', tag: 'nature', region: 'south', name: "Khao Lom Muak", lat: 11.7833, lng: 99.8000, price_thb: 0, desc: "Langoeren." },
-            { id: 707, rank: 107, type: 'hike', tag: 'nature', region: 'south', name: "Phraya Nakhon", lat: 12.2000, lng: 100.0167, price_thb: 200, desc: "Grot paviljoen." },
-            { id: 725, rank: 125, type: 'hike', tag: 'nature', region: 'east', name: "Haew Suwat", lat: 14.4333, lng: 101.4167, price_thb: 400, desc: "The Beach waterval." },
-            { id: 751, rank: 151, type: 'hike', tag: 'nature', region: 'south', name: "Dragon Crest", lat: 8.0833, lng: 98.7667, price_thb: 200, desc: "Iconisch uitzichtpunt Krabi." },
-            { id: 752, rank: 152, type: 'hike', tag: 'nature', region: 'south', name: "Emerald Pool", lat: 7.9225, lng: 99.2600, price_thb: 200, desc: "Smaragd bad." },
-            { id: 754, rank: 154, type: 'hike', tag: 'culture', region: 'south', name: "Tiger Cave Temple", lat: 8.1242, lng: 98.9247, price_thb: 0, desc: "1260 treden naar de top." },
-            { id: 757, rank: 157, type: 'hike', tag: 'nature', region: 'south', name: "Samet Nangshe", lat: 8.2333, lng: 98.4500, price_thb: 50, desc: "Uitzicht op Phang Nga baai." },
-            { id: 758, rank: 158, type: 'hike', tag: 'nature', region: 'south', name: "Black Rock Viewpoint", lat: 7.7833, lng: 98.3000, price_thb: 0, desc: "Phuket uitzicht." },
-            { id: 767, rank: 167, type: 'hike', tag: 'nature', region: 'south', name: "Bottle Beach Hike", lat: 9.7833, lng: 100.0333, price_thb: 0, desc: "Jungle tocht." },
-            { id: 769, rank: 169, type: 'hike', tag: 'nature', region: 'south', name: "John Suwan", lat: 10.0333, lng: 99.8333, price_thb: 100, desc: "Koh Tao view." },
-            { id: 774, rank: 174, type: 'hike', tag: 'nature', region: 'south', name: "Hong Island Trail", lat: 8.0783, lng: 98.6775, price_thb: 300, desc: "360 view." },
-            { id: 798, rank: 198, type: 'hike', tag: 'nature', region: 'south', name: "Koh Nang Yuan", lat: 10.1167, lng: 99.8167, price_thb: 250, desc: "Eiland uitzicht." }
-        ];
-
-        // --- 2. SETUP MAP ---
+        // --- 1. INITIALISATIE ---
         const isMobile = window.innerWidth < 600;
         const initialZoom = isMobile ? 5 : 6;
         const map = L.map('map', { zoomControl: false }).setView([13.0000, 101.5000], initialZoom);
@@ -396,6 +215,21 @@
 
         function toggleMenu() { document.getElementById('controls').classList.toggle('active'); }
         if(isMobile) document.getElementById('controls').classList.remove('active');
+
+        // --- 2. DATA MERGEN & CHECKEN ---
+        // Hier voegen we de 4 losse bestanden samen tot 1 lijst 'locations'
+        const locations = [
+            ...(typeof sights_data !== 'undefined' ? sights_data : []),
+            ...(typeof food_data !== 'undefined' ? food_data : []),
+            ...(typeof activity_data !== 'undefined' ? activity_data : []),
+            ...(typeof hike_data !== 'undefined' ? hike_data : [])
+        ];
+
+        if (locations.length === 0) {
+            alert("⚠️ Let op: Er zijn geen locaties geladen. Controleer of sights.js, food.js, etc. bestaan en in dezelfde map staan.");
+        } else {
+            console.log(`Succesvol ${locations.length} locaties geladen.`);
+        }
 
         // --- 3. STATE & STORAGE ---
         let favorites = JSON.parse(localStorage.getItem('thai_favs')) || [];
@@ -420,7 +254,6 @@
             document.getElementById('user-status').innerText = "GPS Actief ✅";
             renderMarkers(); 
         });
-
         map.on('locationerror', function(e) { document.getElementById('user-status').innerText = "GPS niet gevonden ❌"; });
 
         function locateUser() {
@@ -442,7 +275,6 @@
                 renderMarkers();
             }
         }
-
         function calcPurchase() {
             const priceThb = parseFloat(document.getElementById('purchaseTHB').value);
             if (priceThb) {
@@ -452,10 +284,7 @@
                 document.getElementById('purchaseResult').innerText = `€ 0.00`;
             }
         }
-
-        function updateRateDisplay(rate) {
-            document.getElementById('rateResult').innerHTML = `Koers: 100 THB = <b>€ ${rate.toFixed(2)}</b>`;
-        }
+        function updateRateDisplay(rate) { document.getElementById('rateResult').innerHTML = `Koers: 100 THB = <b>€ ${rate.toFixed(2)}</b>`; }
 
         // --- 6. FAVORIETEN ---
         function toggleFav(id) {
@@ -483,29 +312,31 @@
             const priceFilter = document.getElementById('priceFilter').value;
             
             const catChecked = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(cb => cb.value);
+            const regChecked = Array.from(document.querySelectorAll('input[name="reg"]:checked')).map(cb => cb.value);
             const tagChecked = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(cb => cb.value);
 
-            // PRIJS BEREKENEN (Nieuwe THB Logica)
+            // PRIJS BEREKENEN
             const convertPrice = (loc) => {
+                // Gratis Check (THB 0 of string "Gratis")
                 if (loc.price_thb === 0) return '<span style="color:green">Gratis</span>';
-                
-                // 1. Nieuwe data (price_thb)
+                if (typeof loc.price === 'string' && (loc.price.toLowerCase().includes('gratis') || loc.price.toLowerCase().includes('donatie'))) return '<span style="color:green">Gratis</span>';
+
+                let thbAmount = 0;
+                // Nieuw: price_thb (getal)
                 if (loc.price_thb !== undefined) {
-                     let euroPrice = (loc.price_thb / 100) * userRate;
-                     return `€ ${euroPrice.toFixed(2)}`;
+                    thbAmount = loc.price_thb;
+                } 
+                // Oud: price (string "€ 10,00") -> fallback
+                else if (loc.price) {
+                    let euroStr = loc.price.replace(/[^0-9,.]/g, '').replace(',', '.');
+                    let oldEuro = parseFloat(euroStr);
+                    if (!isNaN(oldEuro)) thbAmount = (oldEuro / 2.70) * 100;
                 }
 
-                // 2. Fallback oude data (Als price nog een string is zoals "€ 13,50")
-                // Dit is alleen voor de zekerheid, in principe is alles nu omgezet.
-                if (loc.price && typeof loc.price === 'string') {
-                    if (loc.price.toLowerCase().includes('gratis') || loc.price.toLowerCase().includes('donatie')) return '<span style="color:green">Gratis</span>';
-                    let amount = parseFloat(loc.price.replace(/[^0-9,.]/g, '').replace(',', '.'));
-                    if (!amount) return loc.price;
-                    let estimatedTHB = (amount / 2.70) * 100; 
-                    let newEur = (estimatedTHB / 100) * userRate;
-                    return `€ ${newEur.toFixed(2)}`;
+                if (thbAmount > 0) {
+                    let newEuro = (thbAmount / 100) * userRate;
+                    return `€ ${newEuro.toFixed(2)}`;
                 }
-                
                 return "Onbekend";
             };
 
@@ -515,9 +346,9 @@
                 if (!showFavsOnly && loc.rank > maxRank) return;
                 if (searchTerm && !loc.name.toLowerCase().includes(searchTerm)) return;
                 if (!catChecked.includes(loc.type)) return;
+                if (!regChecked.includes(loc.region)) return;
                 if (!tagChecked.includes(loc.tag)) return;
 
-                // Prijs Filter
                 let displayPrice = convertPrice(loc);
                 if (priceFilter !== 'all') {
                     let isFree = displayPrice.includes('Gratis');
@@ -596,7 +427,6 @@
 
         // --- 8. HELPERS ---
         function updateSliderVal() { document.getElementById('rankVal').innerText = document.getElementById('rankSlider').value; }
-        
         function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
             var R = 6371; var dLat = deg2rad(lat2-lat1); var dLon = deg2rad(lon2-lon1); 
             var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 

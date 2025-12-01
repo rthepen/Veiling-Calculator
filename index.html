@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Thailand Ultimate Guide v4</title>
+    <title>Thailand Ultimate Guide v5</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -13,51 +13,36 @@
         
         /* Toggle Button */
         #toggle-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 10px 15px;
-            border-radius: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            z-index: 1000;
-            border: none;
-            font-weight: bold;
-            color: #333;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            position: absolute; top: 20px; right: 20px;
+            background: white; padding: 10px 15px; border-radius: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index: 1000;
+            border: none; font-weight: bold; color: #333; cursor: pointer;
+            display: flex; align-items: center; gap: 5px;
         }
         #toggle-btn:hover { background: #f0f0f0; }
 
         /* Sidebar Controls */
         #controls {
-            position: absolute;
-            top: 0;
-            right: 0;
-            height: 100vh;
-            width: 300px;
-            max-width: 85vw;
-            background: rgba(255, 255, 255, 0.98);
-            padding: 20px;
-            box-shadow: -5px 0 20px rgba(0,0,0,0.2);
-            z-index: 1001;
-            overflow-y: auto;
-            transition: transform 0.3s ease-in-out;
+            position: absolute; top: 0; right: 0; height: 100vh; width: 320px; max-width: 90vw;
+            background: rgba(255, 255, 255, 0.98); padding: 20px;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.2); z-index: 1001;
+            overflow-y: auto; transition: transform 0.3s ease-in-out;
             transform: translateX(100%);
         }
-
         #controls.active { transform: translateX(0); }
 
-        .controls-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px;
-        }
+        .controls-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #555; padding: 5px; }
 
         h2 { margin: 0; font-size: 18px; color: #333; }
-        h4 { margin: 15px 0 8px 0; font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+        h4 { margin: 15px 0 8px 0; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800; }
+
+        /* Zoekbalk */
+        #searchInput {
+            width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc;
+            margin-bottom: 15px; font-size: 14px; box-sizing: border-box;
+            background-color: #f9f9f9;
+        }
 
         .filter-group label { display: flex; align-items: center; margin-bottom: 8px; cursor: pointer; font-size: 14px; color: #333; }
         input[type="checkbox"] { margin-right: 12px; transform: scale(1.2); accent-color: #007bff; }
@@ -67,61 +52,58 @@
         input[type=range] { width: 100%; margin: 10px 0; cursor: pointer; accent-color: #007bff; }
         .slider-val { font-weight: bold; color: #007bff; float: right; font-size: 16px; }
 
-        /* KLEUREN LEGENDA & PINS */
-        .legend-color { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
-        
-        /* Definieer hier de kleuren hard */
-        .c-sight { background-color: #007bff; }
-        .c-food { background-color: #dc3545; }
-        .c-activity { background-color: #9c27b0; }
-        .c-hike { background-color: #28a745; }
-
         /* Custom Pins Styles */
         .custom-pin {
             border-radius: 50% 50% 50% 0;
-            border: 2px solid #fff;
-            width: 34px;
-            height: 34px;
+            border: 3px solid #fff;
+            width: 40px; height: 40px;
             transform: rotate(-45deg);
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
+            display: flex !important; align-items: center; justify-content: center;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            position: relative;
             transition: all 0.2s;
         }
-        .custom-pin span { transform: rotate(45deg); color: white; font-weight: 800; font-size: 12px; font-family: sans-serif; }
+        /* Het icoon in de pin (draaien we terug recht) */
+        .pin-icon { transform: rotate(45deg); font-size: 18px; line-height: 1; }
         
-        /* Koppel klassen aan kleuren - DIT WAS HET PROBLEEM */
-        .marker-sight { background-color: #007bff; }
-        .marker-food { background-color: #dc3545; }
-        .marker-activity { background-color: #9c27b0; } /* Paars voor activiteiten */
-        .marker-hike { background-color: #28a745; }
+        /* De Ranking Badge (klein bolletje rechtsboven) */
+        .rank-badge {
+            position: absolute;
+            top: -5px; right: -5px;
+            background: #fff; color: #333;
+            border-radius: 50%;
+            width: 18px; height: 18px;
+            font-size: 10px; font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+            transform: rotate(45deg); /* Compenseer rotatie parent */
+            border: 2px solid #333;
+            z-index: 10;
+        }
+
+        .marker-sight { background-color: #007bff; }   /* Blauw */
+        .marker-food { background-color: #dc3545; }    /* Rood */
+        .marker-activity { background-color: #9c27b0; } /* Paars */
+        .marker-hike { background-color: #28a745; }    /* Groen */
 
         /* Popup */
         .leaflet-popup-content-wrapper { border-radius: 12px; }
-        .popup-content { min-width: 230px; }
+        .popup-content { min-width: 240px; }
         .popup-content h3 { margin: 0 0 5px 0; color: #222; font-size: 16px; }
         .popup-content .category { font-size: 10px; font-weight: bold; color: #888; text-transform: uppercase; margin-bottom: 5px; }
         .popup-content .desc { font-size: 13px; color: #555; margin-bottom: 10px; }
-        
-        /* Knoppen Grid */
+        .distance-tag { display: inline-block; background: #eee; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-bottom: 8px; font-weight: bold; color: #555; }
+
         .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
         .full-width { grid-column: 1 / -1; }
-        
-        .popup-btn {
-            display: flex; align-items: center; justify-content: center;
-            text-decoration: none; border-radius: 6px; padding: 8px 5px;
-            font-size: 12px; font-weight: bold; color: white; gap: 5px;
-            transition: opacity 0.2s;
-        }
+        .popup-btn { display: flex; align-items: center; justify-content: center; text-decoration: none; border-radius: 6px; padding: 10px 5px; font-size: 12px; font-weight: bold; color: white; gap: 5px; transition: opacity 0.2s; }
         .popup-btn:hover { opacity: 0.9; }
+        
+        .btn-google { background: #4285F4; } 
+        .btn-nav { background: #34A853; }
+        .btn-yt { background: #FF0000; }
+        .btn-wiki { background: #555; }
 
-        .btn-google { background: #4285F4; } /* Google Page */
-        .btn-nav { background: #34A853; }    /* Navigatie Groen */
-        .btn-yt { background: #FF0000; }     /* YouTube */
-        .btn-wiki { background: #555; }      /* Wiki */
-
-        .loc-btn { width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .loc-btn { width: 100%; padding: 12px; background: #222; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -134,6 +116,8 @@
             <button class="close-btn" onclick="toggleMenu()">×</button>
         </div>
         
+        <input type="text" id="searchInput" placeholder="🔍 Zoek op naam (bv. Khao Sok)...">
+
         <div class="slider-container">
             <h4>🏆 Ranking Filter</h4>
             <label>Toon Top <span id="rankVal" class="slider-val">50</span></label>
@@ -141,11 +125,17 @@
         </div>
 
         <div class="filter-group">
+            <h4>Type Ervaring</h4>
+            <label><input type="checkbox" name="tag" value="nature" checked> 🌳 Natuur</label>
+            <label><input type="checkbox" name="tag" value="culture" checked> 🏛️ Cultuur & Stad</label>
+        </div>
+
+        <div class="filter-group">
             <h4>Categorieën</h4>
-            <label><input type="checkbox" name="cat" value="sight" checked> <span class="legend-color c-sight"></span> Bezienswaardigheden</label>
-            <label><input type="checkbox" name="cat" value="food" checked> <span class="legend-color c-food"></span> Eten & Drinken</label>
-            <label><input type="checkbox" name="cat" value="activity" checked> <span class="legend-color c-activity"></span> Activiteiten</label>
-            <label><input type="checkbox" name="cat" value="hike" checked> <span class="legend-color c-hike"></span> Wandelingen</label>
+            <label><input type="checkbox" name="cat" value="sight" checked> 📷 Bezienswaardigheden</label>
+            <label><input type="checkbox" name="cat" value="food" checked> 🍜 Eten & Drinken</label>
+            <label><input type="checkbox" name="cat" value="activity" checked> 🏄 Activiteiten</label>
+            <label><input type="checkbox" name="cat" value="hike" checked> 🥾 Wandelingen</label>
         </div>
 
         <div class="filter-group">
@@ -188,66 +178,66 @@
             maxZoom: 19
         }).addTo(map);
 
-        function toggleMenu() {
-            document.getElementById('controls').classList.toggle('active');
-        }
+        function toggleMenu() { document.getElementById('controls').classList.toggle('active'); }
         if(isMobile) document.getElementById('controls').classList.remove('active');
 
-        // DATA - Let op: 'type' is nu strikt 'sight', 'food', 'activity', 'hike'
+        // Global variable for user location
+        let userLat = null;
+        let userLng = null;
+
+        // DATA: Added 'tag' (nature/culture)
         const locations = [
             // BEZIENSWAARDIGHEDEN
-            { rank: 1, type: 'sight', region: 'bangkok', name: "The Grand Palace", lat: 13.7500, lng: 100.4915, price: "€ 13,50", desc: "Hét symbool van Thailand." },
-            { rank: 2, type: 'sight', region: 'bangkok', name: "Wat Arun", lat: 13.7437, lng: 100.4888, price: "€ 5,40", desc: "Tempel van de Dageraad." },
-            { rank: 3, type: 'sight', region: 'bangkok', name: "Ayutthaya Historical Park", lat: 14.3532, lng: 100.5684, price: "€ 1,35", desc: "Oude tempelruïnes." },
-            { rank: 4, type: 'sight', region: 'south', name: "Maya Bay (Phi Phi)", lat: 7.6775, lng: 98.7663, price: "€ 10,80", desc: "Beroemd strand uit 'The Beach'." },
-            { rank: 5, type: 'sight', region: 'north', name: "Wat Phra That Doi Suthep", lat: 18.8048, lng: 98.9216, price: "€ 0,80", desc: "Heilige bergtempel." },
-            { rank: 6, type: 'sight', region: 'south', name: "Khao Sok National Park", lat: 8.9135, lng: 98.5309, price: "€ 8,10", desc: "Oerwoud en drijvende huisjes." },
-            { rank: 7, type: 'sight', region: 'bangkok', name: "Damnoen Saduak Market", lat: 13.5195, lng: 99.9577, price: "Gratis (boot €€)", desc: "Drijvende markt." },
-            { rank: 8, type: 'sight', region: 'bangkok', name: "Wat Pho", lat: 13.7465, lng: 100.4933, price: "€ 8,10", desc: "Liggende Boeddha." },
-            { rank: 9, type: 'sight', region: 'west', name: "Bridge over River Kwai", lat: 14.0410, lng: 99.5042, price: "Gratis", desc: "WO2 Historie." },
-            { rank: 10, type: 'sight', region: 'south', name: "Railay Beach", lat: 8.0110, lng: 98.8373, price: "Gratis", desc: "Kalksteenkliffen strand." },
-            { rank: 12, type: 'sight', region: 'north', name: "Wat Rong Khun", lat: 19.8243, lng: 99.7632, price: "€ 2,70", desc: "De Witte Tempel." },
-            { rank: 13, type: 'sight', region: 'north', name: "Sukhothai Historical Park", lat: 17.0163, lng: 99.7036, price: "€ 2,70", desc: "Oerste hoofdstad." },
-            { rank: 18, type: 'sight', region: 'east', name: "Sanctuary of Truth", lat: 12.9727, lng: 100.8891, price: "€ 13,50", desc: "Houten tempel aan zee." },
+            { rank: 1, type: 'sight', tag: 'culture', region: 'bangkok', name: "The Grand Palace", lat: 13.7500, lng: 100.4915, price: "€ 13,50", desc: "Hét symbool van Thailand." },
+            { rank: 2, type: 'sight', tag: 'culture', region: 'bangkok', name: "Wat Arun", lat: 13.7437, lng: 100.4888, price: "€ 5,40", desc: "Tempel van de Dageraad." },
+            { rank: 3, type: 'sight', tag: 'culture', region: 'bangkok', name: "Ayutthaya Historical Park", lat: 14.3532, lng: 100.5684, price: "€ 1,35", desc: "Oude tempelruïnes." },
+            { rank: 4, type: 'sight', tag: 'nature', region: 'south', name: "Maya Bay (Phi Phi)", lat: 7.6775, lng: 98.7663, price: "€ 10,80", desc: "Beroemd strand uit 'The Beach'." },
+            { rank: 5, type: 'sight', tag: 'culture', region: 'north', name: "Wat Phra That Doi Suthep", lat: 18.8048, lng: 98.9216, price: "€ 0,80", desc: "Heilige bergtempel." },
+            { rank: 6, type: 'sight', tag: 'nature', region: 'south', name: "Khao Sok National Park", lat: 8.9135, lng: 98.5309, price: "€ 8,10", desc: "Oerwoud en drijvende huisjes." },
+            { rank: 7, type: 'sight', tag: 'culture', region: 'bangkok', name: "Damnoen Saduak Market", lat: 13.5195, lng: 99.9577, price: "Gratis (boot €€)", desc: "Drijvende markt." },
+            { rank: 8, type: 'sight', tag: 'culture', region: 'bangkok', name: "Wat Pho", lat: 13.7465, lng: 100.4933, price: "€ 8,10", desc: "Liggende Boeddha." },
+            { rank: 9, type: 'sight', tag: 'culture', region: 'west', name: "Bridge over River Kwai", lat: 14.0410, lng: 99.5042, price: "Gratis", desc: "WO2 Historie." },
+            { rank: 10, type: 'sight', tag: 'nature', region: 'south', name: "Railay Beach", lat: 8.0110, lng: 98.8373, price: "Gratis", desc: "Kalksteenkliffen strand." },
+            { rank: 12, type: 'sight', tag: 'culture', region: 'north', name: "Wat Rong Khun", lat: 19.8243, lng: 99.7632, price: "€ 2,70", desc: "De Witte Tempel." },
+            { rank: 13, type: 'sight', tag: 'culture', region: 'north', name: "Sukhothai Historical Park", lat: 17.0163, lng: 99.7036, price: "€ 2,70", desc: "Oerste hoofdstad." },
+            { rank: 18, type: 'sight', tag: 'culture', region: 'east', name: "Sanctuary of Truth", lat: 12.9727, lng: 100.8891, price: "€ 13,50", desc: "Houten tempel aan zee." },
+            { rank: 25, type: 'sight', tag: 'culture', region: 'bangkok', name: "Jim Thompson House", lat: 13.7495, lng: 100.5283, price: "€ 5,40", desc: "Thais houten huis & zijde." },
             
-            // ETEN
-            { rank: 1, type: 'food', region: 'bangkok', name: "Raan Jay Fai", lat: 13.7525, lng: 100.5048, price: "€ 20+", desc: "Michelin streetfood (Krabomelet)." },
-            { rank: 2, type: 'food', region: 'bangkok', name: "Jeh O Chula", lat: 13.7425, lng: 100.5225, price: "€ 6,75", desc: "Tom Yum Mama Noodles." },
-            { rank: 3, type: 'food', region: 'north', name: "Khao Soi Khun Yai", lat: 18.7953, lng: 98.9831, price: "€ 1,35", desc: "Beste Khao Soi in Chiang Mai." },
-            { rank: 4, type: 'food', region: 'bangkok', name: "Thipsamai Pad Thai", lat: 13.7528, lng: 100.5048, price: "€ 3,50", desc: "Beroemdste Pad Thai." },
-            { rank: 5, type: 'food', region: 'bangkok', name: "Wattana Panich", lat: 13.7341, lng: 100.5876, price: "€ 2,70", desc: "50-jaar oude soepbouillon." },
-            { rank: 6, type: 'food', region: 'south', name: "Tu Kab Khao", lat: 7.8836, lng: 98.3880, price: "€ 12,00", desc: "Zuid-Thais in Phuket Town." },
-            { rank: 10, type: 'food', region: 'north', name: "Khao Soi Mae Sai", lat: 18.7996, lng: 98.9752, price: "€ 1,35", desc: "Rijke bouillon Khao Soi." },
-            { rank: 12, type: 'food', region: 'bangkok', name: "Jok Prince", lat: 13.7196, lng: 100.5153, price: "€ 1,50", desc: "Rijstepap ontbijt." },
-            { rank: 22, type: 'food', region: 'bangkok', name: "T&K Seafood", lat: 13.7410, lng: 100.5085, price: "€ 10,00", desc: "Street seafood in Chinatown." },
-            { rank: 30, type: 'food', region: 'bangkok', name: "Pier 21 Food Court", lat: 13.7376, lng: 100.5603, price: "€ 1,50", desc: "Goedkoopste schone streetfood." },
-            { rank: 32, type: 'food', region: 'south', name: "Kodam Kitchen", lat: 8.0336, lng: 98.8286, price: "€ 6,00", desc: "Beste in Ao Nang." },
+            // ETEN (Default Culture)
+            { rank: 1, type: 'food', tag: 'culture', region: 'bangkok', name: "Raan Jay Fai", lat: 13.7525, lng: 100.5048, price: "€ 20+", desc: "Michelin streetfood (Krabomelet)." },
+            { rank: 2, type: 'food', tag: 'culture', region: 'bangkok', name: "Jeh O Chula", lat: 13.7425, lng: 100.5225, price: "€ 6,75", desc: "Tom Yum Mama Noodles." },
+            { rank: 3, type: 'food', tag: 'culture', region: 'north', name: "Khao Soi Khun Yai", lat: 18.7953, lng: 98.9831, price: "€ 1,35", desc: "Beste Khao Soi in Chiang Mai." },
+            { rank: 4, type: 'food', tag: 'culture', region: 'bangkok', name: "Thipsamai Pad Thai", lat: 13.7528, lng: 100.5048, price: "€ 3,50", desc: "Beroemdste Pad Thai." },
+            { rank: 5, type: 'food', tag: 'culture', region: 'bangkok', name: "Wattana Panich", lat: 13.7341, lng: 100.5876, price: "€ 2,70", desc: "50-jaar oude soepbouillon." },
+            { rank: 6, type: 'food', tag: 'culture', region: 'south', name: "Tu Kab Khao", lat: 7.8836, lng: 98.3880, price: "€ 12,00", desc: "Zuid-Thais in Phuket Town." },
+            { rank: 10, type: 'food', tag: 'culture', region: 'north', name: "Khao Soi Mae Sai", lat: 18.7996, lng: 98.9752, price: "€ 1,35", desc: "Rijke bouillon Khao Soi." },
+            { rank: 12, type: 'food', tag: 'culture', region: 'bangkok', name: "Jok Prince", lat: 13.7196, lng: 100.5153, price: "€ 1,50", desc: "Rijstepap ontbijt." },
+            { rank: 22, type: 'food', tag: 'culture', region: 'bangkok', name: "T&K Seafood", lat: 13.7410, lng: 100.5085, price: "€ 10,00", desc: "Street seafood in Chinatown." },
+            { rank: 30, type: 'food', tag: 'culture', region: 'bangkok', name: "Pier 21 Food Court", lat: 13.7376, lng: 100.5603, price: "€ 1,50", desc: "Goedkoopste schone streetfood." },
+            { rank: 32, type: 'food', tag: 'culture', region: 'south', name: "Kodam Kitchen", lat: 8.0336, lng: 98.8286, price: "€ 6,00", desc: "Beste in Ao Nang." },
 
-            // ACTIVITEITEN (Dit was het probleemgebied - nu gefixed)
-            { rank: 1, type: 'activity', region: 'bangkok', name: "Thaise Massage (Wat Pho)", lat: 13.7460, lng: 100.4930, price: "€ 8,00", desc: "De bron van de massage." },
-            { rank: 4, type: 'activity', region: 'north', name: "Olifantenreservaat (ENP)", lat: 19.2155, lng: 98.8606, price: "€ 60,00", desc: "Ethische opvang, no riding." },
-            { rank: 5, type: 'activity', region: 'bangkok', name: "Kookcursus (Silom)", lat: 13.7242, lng: 100.5234, price: "€ 30,00", desc: "Leer curry maken." },
-            { rank: 15, type: 'activity', region: 'south', name: "Full Moon Party", lat: 9.6766, lng: 100.0631, price: "€ 3,00", desc: "Strandfeest Koh Phangan." },
-            { rank: 28, type: 'activity', region: 'bangkok', name: "Sak Yant Tattoo", lat: 13.9168, lng: 100.2078, price: "Donatie", desc: "Heilige tatoeage (Wat Bang Phra)." },
-            { rank: 30, type: 'activity', region: 'bangkok', name: "Chatuchak Market", lat: 13.7998, lng: 100.5504, price: "Gratis", desc: "Grootste weekendmarkt." },
-            { rank: 40, type: 'activity', region: 'bangkok', name: "Varanen in Lumpini Park", lat: 13.7314, lng: 100.5414, price: "Gratis", desc: "Stadspark vol dieren." },
-            { rank: 50, type: 'activity', region: 'bangkok', name: "Ancient City", lat: 13.5390, lng: 100.6226, price: "€ 20,00", desc: "Thailand in het klein." },
+            // ACTIVITEITEN
+            { rank: 1, type: 'activity', tag: 'culture', region: 'bangkok', name: "Thaise Massage (Wat Pho)", lat: 13.7460, lng: 100.4930, price: "€ 8,00", desc: "De bron van de massage." },
+            { rank: 4, type: 'activity', tag: 'nature', region: 'north', name: "Olifantenreservaat (ENP)", lat: 19.2155, lng: 98.8606, price: "€ 60,00", desc: "Ethische opvang, no riding." },
+            { rank: 5, type: 'activity', tag: 'culture', region: 'bangkok', name: "Kookcursus (Silom)", lat: 13.7242, lng: 100.5234, price: "€ 30,00", desc: "Leer curry maken." },
+            { rank: 15, type: 'activity', tag: 'culture', region: 'south', name: "Full Moon Party", lat: 9.6766, lng: 100.0631, price: "€ 3,00", desc: "Strandfeest Koh Phangan." },
+            { rank: 28, type: 'activity', tag: 'culture', region: 'bangkok', name: "Sak Yant Tattoo", lat: 13.9168, lng: 100.2078, price: "Donatie", desc: "Heilige tatoeage (Wat Bang Phra)." },
+            { rank: 30, type: 'activity', tag: 'culture', region: 'bangkok', name: "Chatuchak Market", lat: 13.7998, lng: 100.5504, price: "Gratis", desc: "Grootste weekendmarkt." },
+            { rank: 40, type: 'activity', tag: 'nature', region: 'bangkok', name: "Varanen in Lumpini Park", lat: 13.7314, lng: 100.5414, price: "Gratis", desc: "Stadspark vol dieren." },
+            { rank: 50, type: 'activity', tag: 'culture', region: 'bangkok', name: "Ancient City", lat: 13.5390, lng: 100.6226, price: "€ 20,00", desc: "Thailand in het klein." },
 
             // WANDELINGEN
-            { rank: 1, type: 'hike', region: 'north', name: "Kew Mae Pan Nature Trail", lat: 18.5527, lng: 98.4801, price: "€ 5,50", desc: "Boven de wolken op Doi Inthanon." },
-            { rank: 2, type: 'hike', region: 'south', name: "Dragon Crest (Ngorn Nak)", lat: 8.0973, lng: 98.7494, price: "Gratis", desc: "Spectaculair uitzicht Krabi." },
-            { rank: 3, type: 'hike', region: 'north', name: "Monk's Trail (Wat Pha Lat)", lat: 18.7963, lng: 98.9435, price: "Gratis", desc: "Junglepad naar tempel." },
-            { rank: 4, type: 'hike', region: 'south', name: "Phraya Nakhon Cave", lat: 12.2059, lng: 100.0102, price: "€ 5,40", desc: "Grot met paviljoen." },
-            { rank: 5, type: 'hike', region: 'west', name: "Erawan Waterfalls", lat: 14.3755, lng: 99.1440, price: "€ 8,10", desc: "7 waterval niveaus." },
-            { rank: 6, type: 'hike', region: 'west', name: "Khao Chang Phueak", lat: 14.6543, lng: 98.5413, price: "€ 10,00", desc: "Gevaarlijke bergrug." },
-            { rank: 8, type: 'hike', region: 'north', name: "Phu Chi Fa", lat: 19.8500, lng: 100.4460, price: "Gratis", desc: "Zonsopgang op klif." },
-            { rank: 9, type: 'hike', region: 'south', name: "Tiger Cave Temple (1237 treden)", lat: 8.1239, lng: 98.9251, price: "Gratis", desc: "Zware klim naar Boeddha." },
-            { rank: 13, type: 'hike', region: 'north', name: "Pai Canyon", lat: 19.3060, lng: 98.4526, price: "Gratis", desc: "Smalle zandrichels." },
-            { rank: 14, type: 'hike', region: 'north', name: "Sticky Waterfalls", lat: 19.0833, lng: 99.0833, price: "Gratis", desc: "In de waterval lopen." },
-            { rank: 27, type: 'hike', region: 'bangkok', name: "Bang Kachao (Green Lung)", lat: 13.6828, lng: 100.5600, price: "Gratis", desc: "Fietsen/lopen in stad." },
-
-            // Testitem buitenland (wordt gefilterd)
-            { rank: 99, type: 'activity', region: 'north', name: "Test Fout Amsterdam", lat: 52.3862, lng: 4.8847, price: "€ 50,00", desc: "Wordt verwijderd." }
+            { rank: 1, type: 'hike', tag: 'nature', region: 'north', name: "Kew Mae Pan Nature Trail", lat: 18.5527, lng: 98.4801, price: "€ 5,50", desc: "Boven de wolken op Doi Inthanon." },
+            { rank: 2, type: 'hike', tag: 'nature', region: 'south', name: "Dragon Crest (Ngorn Nak)", lat: 8.0973, lng: 98.7494, price: "Gratis", desc: "Spectaculair uitzicht Krabi." },
+            { rank: 3, type: 'hike', tag: 'nature', region: 'north', name: "Monk's Trail (Wat Pha Lat)", lat: 18.7963, lng: 98.9435, price: "Gratis", desc: "Junglepad naar tempel." },
+            { rank: 4, type: 'hike', tag: 'nature', region: 'south', name: "Phraya Nakhon Cave", lat: 12.2059, lng: 100.0102, price: "€ 5,40", desc: "Grot met paviljoen." },
+            { rank: 5, type: 'hike', tag: 'nature', region: 'west', name: "Erawan Waterfalls", lat: 14.3755, lng: 99.1440, price: "€ 8,10", desc: "7 waterval niveaus." },
+            { rank: 6, type: 'hike', tag: 'nature', region: 'west', name: "Khao Chang Phueak", lat: 14.6543, lng: 98.5413, price: "€ 10,00", desc: "Gevaarlijke bergrug." },
+            { rank: 8, type: 'hike', tag: 'nature', region: 'north', name: "Phu Chi Fa", lat: 19.8500, lng: 100.4460, price: "Gratis", desc: "Zonsopgang op klif." },
+            { rank: 9, type: 'hike', tag: 'culture', region: 'south', name: "Tiger Cave Temple (1237 treden)", lat: 8.1239, lng: 98.9251, price: "Gratis", desc: "Zware klim naar Boeddha." },
+            { rank: 13, type: 'hike', tag: 'nature', region: 'north', name: "Pai Canyon", lat: 19.3060, lng: 98.4526, price: "Gratis", desc: "Smalle zandrichels." },
+            { rank: 14, type: 'hike', tag: 'nature', region: 'north', name: "Sticky Waterfalls", lat: 19.0833, lng: 99.0833, price: "Gratis", desc: "In de waterval lopen." },
+            { rank: 27, type: 'hike', tag: 'nature', region: 'bangkok', name: "Bang Kachao (Green Lung)", lat: 13.6828, lng: 100.5600, price: "Gratis", desc: "Fietsen/lopen in stad." }
         ];
 
         let markers = [];
@@ -258,15 +248,33 @@
 
             const maxRank = parseInt(document.getElementById('rankSlider').value);
             const priceFilter = document.getElementById('priceFilter').value;
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            // Checkboxes values
             const catChecked = Array.from(document.querySelectorAll('input[name="cat"]:checked')).map(cb => cb.value);
             const regChecked = Array.from(document.querySelectorAll('input[name="reg"]:checked')).map(cb => cb.value);
+            const tagChecked = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(cb => cb.value);
 
             locations.forEach(loc => {
-                if (loc.lat < 5 || loc.lat > 21) return; // Geofence
+                // 1. Geofence
+                if (loc.lat < 5 || loc.lat > 21) return;
+
+                // 2. Search Filter
+                if (searchTerm && !loc.name.toLowerCase().includes(searchTerm)) return;
+
+                // 3. Ranking Filter
                 if (loc.rank > maxRank) return;
+
+                // 4. Category Filter
                 if (!catChecked.includes(loc.type)) return;
+
+                // 5. Region Filter
                 if (!regChecked.includes(loc.region)) return;
+
+                // 6. Nature/Culture Filter
+                if (!tagChecked.includes(loc.tag)) return;
                 
+                // 7. Price Filter
                 if (priceFilter !== 'all') {
                     if (priceFilter === 'free' && !loc.price.toLowerCase().includes('gratis')) return;
                     const isCheap = loc.price.includes('€ 1') || loc.price.includes('€ 2') || loc.price.includes('€ 3') || loc.price.includes('€ 4');
@@ -276,20 +284,37 @@
                     if (priceFilter === 'high' && (isCheap || isMid || loc.price.toLowerCase().includes('gratis'))) return;
                 }
 
-                // FIX: Class name consistentie (marker-activity ipv marker-act)
+                // Determine Icon and Color
                 const cssClass = `marker-${loc.type}`;
+                let iconChar = '';
+                if(loc.type === 'sight') iconChar = '📷';
+                if(loc.type === 'food') iconChar = '🍜';
+                if(loc.type === 'activity') iconChar = '🏄';
+                if(loc.type === 'hike') iconChar = '🥾';
 
+                // Create Marker Icon with Badge
                 const customIcon = L.divIcon({
                     className: 'custom-div-icon',
-                    html: `<div class="custom-pin ${cssClass}"><span>${loc.rank}</span></div>`,
-                    iconSize: [34, 46],
-                    iconAnchor: [17, 44],
+                    html: `
+                        <div class="custom-pin ${cssClass}">
+                            <div class="pin-icon">${iconChar}</div>
+                            <div class="rank-badge">${loc.rank}</div>
+                        </div>`,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 40],
                     popupAnchor: [0, -45]
                 });
 
                 const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
                 
-                // URLs genereren
+                // Calculate Distance
+                let distanceHtml = '';
+                if (userLat && userLng) {
+                    const distKm = getDistanceFromLatLonInKm(userLat, userLng, loc.lat, loc.lng);
+                    distanceHtml = `<div class="distance-tag">📏 ${distKm.toFixed(1)} km van jou</div>`;
+                }
+
+                // Links
                 const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
                 const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.name + " Thailand")}`;
                 const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(loc.name + ' Thailand vlog')}`;
@@ -299,6 +324,7 @@
                     <div class="popup-content">
                         <div class="category">${getTypeName(loc.type)} • Nr. ${loc.rank}</div>
                         <h3>${loc.name}</h3>
+                        ${distanceHtml}
                         <div class="desc">${loc.desc}</div>
                         <div style="font-size:12px; margin-bottom:10px;">
                             📍 ${getRegionName(loc.region)} <br>
@@ -319,6 +345,20 @@
             });
         }
 
+        // Distance Calculator (Haversine)
+        function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
+            var R = 6371; // Radius of earth in km
+            var dLat = deg2rad(lat2-lat1);  
+            var dLon = deg2rad(lon2-lon1); 
+            var a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2); 
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            var d = R * c; 
+            return d;
+        }
+        function deg2rad(deg) { return deg * (Math.PI/180); }
+
         function getTypeName(type) {
             const types = { 'sight': 'Bezienswaardigheid', 'food': 'Eten', 'activity': 'Activiteit', 'hike': 'Wandeling' };
             return types[type] || type;
@@ -332,20 +372,29 @@
         function locateUser() {
             const statusDiv = document.getElementById('user-status');
             if (!navigator.geolocation) { statusDiv.innerText = "Geen GPS."; return; }
-            statusDiv.innerText = "Zoeken...";
+            statusDiv.innerText = "Locatie zoeken...";
             navigator.geolocation.getCurrentPosition((pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                L.marker([lat, lng]).addTo(map).bindPopup("<b>Jij bent hier</b>").openPopup();
-                map.setView([lat, lng], 10);
-                statusDiv.innerText = "";
+                userLat = pos.coords.latitude;
+                userLng = pos.coords.longitude;
+                
+                // Remove old user marker if exists
+                map.eachLayer((layer) => { if(layer.options.title === 'user') map.removeLayer(layer); });
+
+                L.marker([userLat, userLng], {title: 'user'}).addTo(map).bindPopup("<b>Jij bent hier</b>").openPopup();
+                map.setView([userLat, userLng], 9);
+                statusDiv.innerText = "Locatie gevonden! Afstanden berekend.";
+                
+                // Re-render markers to show distance
+                renderMarkers();
             }, () => { statusDiv.innerText = "Kan locatie niet bepalen."; });
         }
 
+        // Event Listeners
         document.getElementById('rankSlider').addEventListener('input', (e) => {
             document.getElementById('rankVal').innerText = e.target.value;
             renderMarkers();
         });
+        document.getElementById('searchInput').addEventListener('input', renderMarkers);
         document.querySelectorAll('input, select').forEach(el => el.addEventListener('change', renderMarkers));
 
         renderMarkers();

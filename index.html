@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Thailand Ultimate Guide v7</title>
+    <title>Thailand Ultimate Guide v8</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -197,8 +197,8 @@
         </div>
 
         <div class="sidebar-footer">
-            <button class="loc-btn" onclick="locateUser()">📍 Mijn Locatie</button>
-            <div id="user-status" style="font-size: 11px; margin-top: 5px; color: #666; text-align: center;"></div>
+            <button class="loc-btn" onclick="panToUser()">📍 Centreer op mij</button>
+            <div id="user-status" style="font-size: 11px; margin-top: 5px; color: #666; text-align: center;">Zoeken naar GPS...</div>
         </div>
     </div>
 
@@ -223,7 +223,6 @@
         if(isMobile) document.getElementById('controls').classList.remove('active');
 
         // --- 2. DATA MERGEN ---
-        // We voegen alle losse arrays samen. De 'typeof' check voorkomt fouten als een bestand mist.
         const locations = [
             ...(typeof sights_data !== 'undefined' ? sights_data : []),
             ...(typeof food_data !== 'undefined' ? food_data : []),
@@ -233,40 +232,76 @@
 
         // --- 3. STATE & STORAGE ---
         let favorites = JSON.parse(localStorage.getItem('thai_favs')) || [];
-        let userRate = parseFloat(localStorage.getItem('thai_rate')) || 2.70; // Default 2.70
+        let userRate = parseFloat(localStorage.getItem('thai_rate')) || 2.70; 
         let userLat = null;
         let userLng = null;
+        let userMarker = null;
 
-        // Herstel opgeslagen waarden
+        // Herstel
         if(localStorage.getItem('calc_thb')) document.getElementById('calcTHB').value = localStorage.getItem('calc_thb');
         if(localStorage.getItem('calc_eur')) document.getElementById('calcEUR').value = localStorage.getItem('calc_eur');
         updateRateDisplay(userRate);
 
-        // --- 4. CALCULATOR FUNCTIES ---
+        // --- 4. LOCATIE & GPS (AUTO START) ---
+        // Start direct met zoeken (watch: true zorgt dat hij blijft updaten als je beweegt)
+        map.locate({setView: false, watch: true, enableHighAccuracy: true});
+
+        map.on('locationfound', function(e) {
+            userLat = e.latlng.lat;
+            userLng = e.latlng.lng;
+
+            // Blauwe stip (Google Maps stijl)
+            if (!userMarker) {
+                userMarker = L.circleMarker(e.latlng, {
+                    radius: 8,
+                    fillColor: "#4285F4",
+                    color: "#ffffff",
+                    weight: 3,
+                    opacity: 1,
+                    fillOpacity: 1
+                }).addTo(map).bindPopup("Jouw Locatie");
+            } else {
+                userMarker.setLatLng(e.latlng);
+            }
+
+            document.getElementById('user-status').innerText = "GPS Actief ✅";
+            
+            // Herbereken afstanden op de kaart
+            renderMarkers(); 
+        });
+
+        map.on('locationerror', function(e) {
+            document.getElementById('user-status').innerText = "GPS niet gevonden ❌";
+        });
+
+        // Knop om handmatig naar gebruiker te zoomen
+        function panToUser() {
+            if(userLat && userLng) {
+                map.setView([userLat, userLng], 12);
+            } else {
+                alert("Nog geen GPS locatie gevonden. Wacht even...");
+            }
+        }
+
+        // --- 5. CALCULATOR ---
         function calculateRate() {
             const thb = parseFloat(document.getElementById('calcTHB').value);
             const eur = parseFloat(document.getElementById('calcEUR').value);
-            
             if (thb && eur) {
-                // Bereken koers: Hoeveel EUR is 100 THB?
                 const rate100 = (eur / thb) * 100;
                 userRate = rate100;
-                
-                // Opslaan
                 localStorage.setItem('thai_rate', userRate);
                 localStorage.setItem('calc_thb', thb);
                 localStorage.setItem('calc_eur', eur);
-                
-                updateRateDisplay(userRate);
-                calcPurchase(); // Update ook aankoop veld
-                renderMarkers(); // Update prijzen op de kaart
+                updateRateDisplay(rate100);
+                calcPurchase();
+                renderMarkers();
             }
         }
 
         function calcPurchase() {
             const priceThb = parseFloat(document.getElementById('purchaseTHB').value);
             if (priceThb) {
-                // (Prijs / 100) * Koers_per_100
                 const priceEur = (priceThb / 100) * userRate;
                 document.getElementById('purchaseResult').innerText = `€ ${priceEur.toFixed(2)}`;
             } else {
@@ -278,7 +313,7 @@
             document.getElementById('rateResult').innerHTML = `Koers: 100 THB = <b>€ ${rate.toFixed(2)}</b>`;
         }
 
-        // --- 5. FAVORIETEN ---
+        // --- 6. FAVORIETEN ---
         function toggleFav(id) {
             if (favorites.includes(id)) { favorites = favorites.filter(fav => fav !== id); } 
             else { favorites.push(id); }
@@ -292,7 +327,7 @@
             if(document.getElementById('favFilter').checked) renderMarkers();
         }
 
-        // --- 6. RENDER ENGINE ---
+        // --- 7. RENDER ENGINE ---
         let markers = [];
 
         function renderMarkers() {
@@ -308,23 +343,17 @@
             const regChecked = Array.from(document.querySelectorAll('input[name="reg"]:checked')).map(cb => cb.value);
             const tagChecked = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(cb => cb.value);
 
-            // Prijs omrekenen functie
             const convertPrice = (priceStr) => {
                 if (priceStr.toLowerCase().includes('gratis') || priceStr.toLowerCase().includes('donatie')) return priceStr;
                 let amount = parseFloat(priceStr.replace(/[^0-9,.]/g, '').replace(',', '.'));
                 if (!amount) return priceStr;
-                
-                // Database is standaard op 2.70 gebaseerd. Terugrekenen naar THB en dan naar User Rate.
                 let estimatedTHB = (amount / 2.70) * 100; 
                 let newEur = (estimatedTHB / 100) * userRate;
-                
                 return `€ ${newEur.toFixed(2)}`;
             };
 
             locations.forEach(loc => {
-                if (loc.lat < 5 || loc.lat > 21) return; // Geofence
-                
-                // Filters
+                if (loc.lat < 5 || loc.lat > 21) return; 
                 if (showFavsOnly && !favorites.includes(loc.id)) return;
                 if (!showFavsOnly && loc.rank > maxRank) return;
                 if (searchTerm && !loc.name.toLowerCase().includes(searchTerm)) return;
@@ -332,19 +361,15 @@
                 if (!regChecked.includes(loc.region)) return;
                 if (!tagChecked.includes(loc.tag)) return;
 
-                // Prijs Filter (Basic logica)
                 if (priceFilter !== 'all') {
                     if (priceFilter === 'free' && !loc.price.toLowerCase().includes('gratis')) return;
-                    
                     const isCheap = loc.price.includes('€ 1') || loc.price.includes('€ 2') || loc.price.includes('€ 3') || loc.price.includes('€ 4');
                     const isMid = !isCheap && (parseInt(loc.price.replace(/[^0-9]/g, '')) < 20);
-                    
                     if (priceFilter === 'cheap' && !isCheap && !loc.price.toLowerCase().includes('gratis')) return;
                     if (priceFilter === 'mid' && !isMid) return;
                     if (priceFilter === 'high' && (isCheap || isMid || loc.price.toLowerCase().includes('gratis'))) return;
                 }
 
-                // Icoon & Kleur
                 let iconChar = '';
                 if(loc.type === 'sight') iconChar = '📷';
                 if(loc.type === 'food') iconChar = '🍜';
@@ -366,25 +391,20 @@
 
                 const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
                 
-                // Afstand berekening
                 let distHtml = '';
                 if(userLat) {
                     const d = getDistanceFromLatLonInKm(userLat, userLng, loc.lat, loc.lng);
                     distHtml = `<span class="distance-tag">📏 ${d.toFixed(1)} km van jou</span>`;
                 }
 
-                // Favoriet Status
                 const isFav = favorites.includes(loc.id);
                 const favIcon = isFav ? '❤️' : '🤍';
                 const favClass = isFav ? 'fav-active' : 'fav-inactive';
-
-                // Prijs voor weergave
                 const displayPrice = convertPrice(loc.price);
                 const priceColor = displayPrice.includes('Gratis') ? 'green' : '#333';
 
-                // Links
-                const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`; // Directe navigatie
-                const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.name + " Thailand")}`; // Google Maps Pagina
+                const navUrl = `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`;
+                const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.name + " Thailand")}`;
                 const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(loc.name + ' Thailand vlog')}`;
                 const wikiUrl = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(loc.name)}`;
 
@@ -398,14 +418,11 @@
                             </div>
                             <button id="fav-btn-${loc.id}" class="fav-btn ${favClass}" onclick="toggleFav(${loc.id})">${favIcon}</button>
                         </div>
-                        
                         <div class="desc">${loc.desc}</div>
-                        
                         <div class="meta-row">
                             <span>📍 ${loc.region.charAt(0).toUpperCase() + loc.region.slice(1)}</span>
                             <span style="color:${priceColor}">${displayPrice}</span>
                         </div>
-
                         <div class="btn-grid">
                             <a href="${navUrl}" target="_blank" class="popup-btn btn-nav">🚗 Navigeer</a>
                             <a href="${infoUrl}" target="_blank" class="popup-btn btn-google">⭐ Info & Reviews</a>
@@ -420,7 +437,7 @@
             });
         }
 
-        // --- 7. HELPERS ---
+        // --- 8. HELPERS ---
         function updateSliderVal() { document.getElementById('rankVal').innerText = document.getElementById('rankSlider').value; }
         
         function getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2) {
@@ -431,24 +448,6 @@
         }
         function deg2rad(deg) { return deg * (Math.PI/180); }
 
-        function locateUser() {
-            const s = document.getElementById('user-status');
-            if(!navigator.geolocation) { s.innerText = "Geen GPS"; return; }
-            s.innerText = "Zoeken...";
-            navigator.geolocation.getCurrentPosition(p => {
-                userLat = p.coords.latitude; userLng = p.coords.longitude;
-                
-                // Verwijder oude user marker
-                map.eachLayer(l => { if(l.options.title === 'user') map.removeLayer(l); });
-
-                L.marker([userLat, userLng], {title:'user', zIndexOffset: 1000}).addTo(map).bindPopup("<b>Jij bent hier</b>").openPopup();
-                map.setView([userLat, userLng], 10);
-                s.innerText = "Gevonden!";
-                renderMarkers(); // Herbereken afstanden
-            }, () => { s.innerText = "Fout bij locatie."; });
-        }
-
-        // Listeners
         document.getElementById('rankSlider').addEventListener('input', (e) => {
             document.getElementById('rankVal').innerText = e.target.value;
             renderMarkers();
@@ -460,7 +459,6 @@
         });
         document.getElementById('searchInput').addEventListener('keyup', renderMarkers);
 
-        // Start
         renderMarkers();
 
     </script>

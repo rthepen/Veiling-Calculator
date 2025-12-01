@@ -1,318 +1,314 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Veiling Bied Calculator</title>
-  <style>
-    /* iOS look */
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f2f2f7;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    h1, h2 {
-      text-align: center;
-      color: #000;
-      margin: 10px 0;
-    }
-    /* Duidelijke scheiding tussen de secties */
-    .section {
-      margin-bottom: 30px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #ccc;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 600;
-      color: #333;
-    }
-    input[type="number"] {
-      width: 100%;
-      padding: 12px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      -webkit-appearance: none;
-      background-color: #fff;
-    }
-    .button-group {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .button-group button {
-      flex: 1;
-      font-size: 18px;
-      padding: 10px;
-      margin: 0 5px;
-      border: none;
-      border-radius: 10px;
-      background-color: #007AFF;
-      color: #fff;
-      -webkit-appearance: none;
-      outline: none;
-    }
-    .button-group button:first-child {
-      margin-left: 0;
-    }
-    .button-group button:last-child {
-      margin-right: 0;
-    }
-    .copy-button {
-      font-size: 16px;
-      padding: 6px 10px;
-      margin-left: 10px;
-      border: none;
-      border-radius: 8px;
-      background-color: #34C759;
-      color: #fff;
-      -webkit-appearance: none;
-      cursor: pointer;
-    }
-    .result {
-      font-size: 16px;
-      line-height: 1.4;
-      color: #333;
-      padding: 10px;
-      background-color: #f9f9f9;
-      border-radius: 8px;
-    }
-    @media (max-width: 480px) {
-      h1, h2 {
-        font-size: 22px;
-      }
-      input[type="number"], .result {
-        font-size: 16px;
-      }
-      .button-group button {
-        font-size: 16px;
-        padding: 8px;
-      }
-      .copy-button {
-        font-size: 14px;
-        padding: 6px 8px;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thailand Ultimate Guide - Top 50's</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #map { height: 100vh; width: 100%; z-index: 1; }
+        
+        /* Sidebar / Filter Controls */
+        #controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1000;
+            width: 250px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        h2 { margin-top: 0; font-size: 18px; color: #333; }
+        .filter-group { margin-bottom: 15px; }
+        .filter-group label { display: block; margin-bottom: 5px; cursor: pointer; }
+        
+        /* Custom Checkboxes */
+        input[type="checkbox"] { margin-right: 8px; }
+
+        /* Legenda kleuren */
+        .legend-color { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 5px; }
+        .c-sight { background-color: #007bff; }
+        .c-food { background-color: #dc3545; }
+        .c-act { background-color: #6f42c1; }
+        .c-hike { background-color: #28a745; }
+
+        /* Custom Marker Styles */
+        .custom-pin {
+            border-radius: 50% 50% 50% 0;
+            border: 2px solid #fff;
+            width: 30px;
+            height: 30px;
+            transform: rotate(-45deg);
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        
+        .custom-pin span {
+            transform: rotate(45deg);
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .custom-pin:hover { transform: scale(1.2) rotate(-45deg); z-index: 999 !important; }
+
+        /* Marker achtergrondkleuren */
+        .marker-sight { background-color: #007bff; }
+        .marker-food { background-color: #dc3545; }
+        .marker-act { background-color: #6f42c1; }
+        .marker-hike { background-color: #28a745; }
+
+        /* Popup Styles */
+        .popup-content h3 { margin: 0 0 5px 0; font-size: 16px; }
+        .popup-content .category { font-size: 12px; font-weight: bold; color: #666; text-transform: uppercase; }
+        .popup-content .price { color: #28a745; font-weight: bold; margin: 5px 0; }
+        .popup-btn {
+            display: block;
+            background: #007bff;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .popup-btn:hover { background: #0056b3; }
+
+        /* Locatie knop */
+        .loc-btn {
+            width: 100%;
+            padding: 10px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .loc-btn:hover { background: #555; }
+
+    </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Veiling Bied Calculator</h1>
 
-    <!-- Instellingen voor de extra kosten -->
-    <div class="section">
-      <h2>Instellingen Extra Kosten</h2>
-      <label for="pctBtwBid">Btw op biedingswaarde (%)</label>
-      <input type="number" id="pctBtwBid" value="21" step="0.01" oninput="calculateAll()">
-      
-      <label for="pctAuctionCost">Veilingkosten (%)</label>
-      <input type="number" id="pctAuctionCost" value="19" step="0.01" oninput="calculateAll()">
-      
-      <label for="pctBtwAuction">Btw op veilingkosten (%)</label>
-      <input type="number" id="pctBtwAuction" value="21" step="0.01" oninput="calculateAll()">
+    <div id="controls">
+        <h2>Filters</h2>
+        
+        <div class="filter-group">
+            <strong>Categorieën:</strong><br>
+            <label><input type="checkbox" value="sight" checked> <span class="legend-color c-sight"></span> Bezienswaardigheden</label>
+            <label><input type="checkbox" value="food" checked> <span class="legend-color c-food"></span> Eten & Drinken</label>
+            <label><input type="checkbox" value="activity" checked> <span class="legend-color c-act"></span> Activiteiten</label>
+            <label><input type="checkbox" value="hike" checked> <span class="legend-color c-hike"></span> Wandelingen</label>
+        </div>
+
+        <div class="filter-group">
+            <strong>Max Prijs (Geschat):</strong><br>
+            <select id="priceFilter" style="width: 100%; padding: 5px;">
+                <option value="all">Alles tonen</option>
+                <option value="free">Gratis</option>
+                <option value="cheap">Budget (< €5)</option>
+                <option value="mid">Gemiddeld (€5 - €15)</option>
+            </select>
+        </div>
+
+        <button class="loc-btn" onclick="locateUser()">📍 Mijn Locatie</button>
+        <div id="user-status" style="font-size: 12px; margin-top: 5px; color: #666;"></div>
     </div>
 
-    <!-- Aantal Producten -->
-    <div class="section">
-      <h2>Aantal Producten</h2>
-      <label for="quantity">Aantal</label>
-      <input type="number" id="quantity" step="1" value="1" oninput="calculateAll()">
-    </div>
+    <div id="map"></div>
 
-    <!-- Omgekeerde Berekening (bovenaan) -->
-    <div class="section">
-      <h2>Omgekeerde Berekening</h2>
-      <!-- Gewenste Totale prijs per stuk (€) (inc btw en Veilingkosten (€)) -->
-      <label for="totalPrice">Gewenste Totale prijs per stuk (€) (inc btw en Veilingkosten (€))</label>
-      <input type="number" id="totalPrice" step="0.01" placeholder="Voer gewenste prijs per stuk in" oninput="calculateAll()">
-      <div class="button-group">
-        <button type="button" onclick="adjustTotalPrice(-10)">- 10</button>
-        <button type="button" onclick="adjustTotalPrice(10)">+ 10</button>
-      </div>
-      <div class="button-group">
-        <button type="button" onclick="adjustTotalPrice(-1)">- 1</button>
-        <button type="button" onclick="adjustTotalPrice(1)">+ 1</button>
-      </div>
-      <div class="result" id="reverseResult"></div>
-    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Voorwaartse Berekening (onderaan) -->
-    <div class="section">
-      <h2>Voorwaartse Berekening</h2>
-      <label for="bidAmount">Totaal Biedbedrag (€)</label>
-      <input type="number" id="bidAmount" step="0.01" placeholder="Voer totaal biedbedrag in" oninput="calculateAll()">
-      <div class="button-group">
-        <button type="button" onclick="adjustBidAmount(-10)">- 10</button>
-        <button type="button" onclick="adjustBidAmount(10)">+ 10</button>
-      </div>
-      <div class="result" id="forwardResult"></div>
-    </div>
+    <script>
+        // 1. Initialiseer Kaart (Centrum Thailand)
+        const map = L.map('map').setView([13.7563, 100.5018], 6);
 
-    <!-- BTW Voorwaartse Berekening -->
-    <div class="section">
-      <h2>BTW Voorwaartse Berekening</h2>
-      <label for="nettoAmount">Exclusief btw</label>
-      <input type="number" id="nettoAmount" step="0.01" placeholder="Voer exclusief btw in" oninput="calculateBTWForward()">
-      <label for="vatPercentage">BTW percentage (%)</label>
-      <input type="number" id="vatPercentage" step="0.01" placeholder="Voer BTW percentage in" value="21" oninput="calculateBTWForward()">
-      <div class="result" id="vatForwardResult"></div>
-    </div>
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 19
+        }).addTo(map);
 
-    <!-- BTW Omgekeerde Berekening -->
-    <div class="section">
-      <h2>BTW Omgekeerde Berekening</h2>
-      <label for="brutoAmount">Inclusief btw</label>
-      <input type="number" id="brutoAmount" step="0.01" placeholder="Voer inclusief btw in" oninput="calculateBTWReverse()">
-      <label for="vatPercentage2">BTW percentage (%)</label>
-      <input type="number" id="vatPercentage2" step="0.01" placeholder="Voer BTW percentage in" value="21" oninput="calculateBTWReverse()">
-      <div class="result" id="vatReverseResult"></div>
-    </div>
-  </div>
+        // 2. De Data (Geconsolideerde Top 50 lijsten)
+        // Let op: Ik heb een selectie van de top items incl coördinaten opgenomen.
+        // Lat/Lng buiten Thailand worden later gefilterd.
+        const locations = [
+            // --- BEZIENSWAARDIGHEDEN (BLAUW) ---
+            { rank: 1, type: 'sight', name: "The Grand Palace", lat: 13.7500, lng: 100.4915, price: "€ 13,50", desc: "Hét symbool van Thailand." },
+            { rank: 2, type: 'sight', name: "Wat Arun", lat: 13.7437, lng: 100.4888, price: "€ 5,40", desc: "Tempel van de Dageraad." },
+            { rank: 3, type: 'sight', name: "Ayutthaya Historical Park", lat: 14.3532, lng: 100.5684, price: "€ 1,35", desc: "Oude tempelruïnes." },
+            { rank: 4, type: 'sight', name: "Maya Bay (Phi Phi)", lat: 7.6775, lng: 98.7663, price: "€ 10,80", desc: "Beroemd strand uit 'The Beach'." },
+            { rank: 5, type: 'sight', name: "Wat Phra That Doi Suthep", lat: 18.8048, lng: 98.9216, price: "€ 0,80", desc: "Heilige bergtempel." },
+            { rank: 6, type: 'sight', name: "Khao Sok National Park", lat: 8.9135, lng: 98.5309, price: "€ 8,10", desc: "Oerwoud en meer." },
+            { rank: 7, type: 'sight', name: "Damnoen Saduak Floating Market", lat: 13.5195, lng: 99.9577, price: "Gratis (boot €€)", desc: "Drijvende markt." },
+            { rank: 8, type: 'sight', name: "Wat Pho", lat: 13.7465, lng: 100.4933, price: "€ 8,10", desc: "Liggende Boeddha." },
+            { rank: 9, type: 'sight', name: "Bridge over River Kwai", lat: 14.0410, lng: 99.5042, price: "Gratis", desc: "WO2 Historie." },
+            { rank: 10, type: 'sight', name: "Railay Beach", lat: 8.0110, lng: 98.8373, price: "Gratis", desc: "Kalksteenkliffen strand." },
+            { rank: 12, type: 'sight', name: "Wat Rong Khun (Witte Tempel)", lat: 19.8243, lng: 99.7632, price: "€ 2,70", desc: "Moderne kunsttempel." },
+            { rank: 13, type: 'sight', name: "Sukhothai Historical Park", lat: 17.0163, lng: 99.7036, price: "€ 2,70", desc: "Oerste hoofdstad." },
+            { rank: 18, type: 'sight', name: "Sanctuary of Truth", lat: 12.9727, lng: 100.8891, price: "€ 13,50", desc: "Houten tempel aan zee." },
+            { rank: 25, type: 'sight', name: "Jim Thompson House", lat: 13.7495, lng: 100.5283, price: "€ 5,40", desc: "Thais houten huis & zijde." },
+            
+            // --- ETEN (ROOD) ---
+            { rank: 1, type: 'food', name: "Raan Jay Fai", lat: 13.7525, lng: 100.5048, price: "€ 20+", desc: "Michelin streetfood (Krabomelet)." },
+            { rank: 2, type: 'food', name: "Jeh O Chula", lat: 13.7425, lng: 100.5225, price: "€ 6,75", desc: "Tom Yum Mama Noodles." },
+            { rank: 3, type: 'food', name: "Khao Soi Khun Yai", lat: 18.7953, lng: 98.9831, price: "€ 1,35", desc: "Beste Khao Soi in Chiang Mai." },
+            { rank: 4, type: 'food', name: "Thipsamai Pad Thai", lat: 13.7528, lng: 100.5048, price: "€ 3,50", desc: "Beroemdste Pad Thai." },
+            { rank: 5, type: 'food', name: "Wattana Panich", lat: 13.7341, lng: 100.5876, price: "€ 2,70", desc: "50-jaar oude soepbouillon." },
+            { rank: 6, type: 'food', name: "Tu Kab Khao", lat: 7.8836, lng: 98.3880, price: "€ 12,00", desc: "Zuid-Thais in Phuket Town." },
+            { rank: 10, type: 'food', name: "Khao Soi Mae Sai", lat: 18.7996, lng: 98.9752, price: "€ 1,35", desc: "Rijke bouillon Khao Soi." },
+            { rank: 12, type: 'food', name: "Jok Prince", lat: 13.7196, lng: 100.5153, price: "€ 1,50", desc: "Rijstepap ontbijt." },
+            { rank: 22, type: 'food', name: "T&K Seafood", lat: 13.7410, lng: 100.5085, price: "€ 10,00", desc: "Street seafood in Chinatown." },
+            { rank: 30, type: 'food', name: "Pier 21 Food Court", lat: 13.7376, lng: 100.5603, price: "€ 1,50", desc: "Goedkoopste schone streetfood." },
+            { rank: 32, type: 'food', name: "Kodam Kitchen", lat: 8.0336, lng: 98.8286, price: "€ 6,00", desc: "Beste in Ao Nang." },
 
-  <script>
-    // Hulpfunctie om een getal met twee decimalen weer te geven met een komma als decimaalscheiding
-    function formatNumber(num) {
-      return num.toFixed(2).replace('.', ',');
-    }
+            // --- ACTIVITEITEN (PAARS) ---
+            { rank: 1, type: 'activity', name: "Thaise Massage (Wat Pho School)", lat: 13.7460, lng: 100.4930, price: "€ 8,00", desc: "De bron van de massage." },
+            { rank: 4, type: 'activity', name: "Olifantenreservaat (Elephant Nature Park)", lat: 19.2155, lng: 98.8606, price: "€ 60,00", desc: "Ethische opvang." },
+            { rank: 5, type: 'activity', name: "Kookcursus (Silom)", lat: 13.7242, lng: 100.5234, price: "€ 30,00", desc: "Leer curry maken." },
+            { rank: 15, type: 'activity', name: "Full Moon Party", lat: 9.6766, lng: 100.0631, price: "€ 3,00", desc: "Strandfeest Koh Phangan." },
+            { rank: 28, type: 'activity', name: "Sak Yant Tattoo (Wat Bang Phra)", lat: 13.9168, lng: 100.2078, price: "Donatie", desc: "Heilige tatoeage." },
+            { rank: 30, type: 'activity', name: "Chatuchak Market", lat: 13.7998, lng: 100.5504, price: "Gratis", desc: "Grootste markt." },
+            { rank: 40, type: 'activity', name: "Varanen in Lumpini Park", lat: 13.7314, lng: 100.5414, price: "Gratis", desc: "Stadspark." },
+            { rank: 50, type: 'activity', name: "Ancient City", lat: 13.5390, lng: 100.6226, price: "€ 20,00", desc: "Thailand in het klein." },
 
-    function getSettings() {
-      var pctBtwBid = parseFloat(document.getElementById("pctBtwBid").value) / 100;
-      var pctAuctionCost = parseFloat(document.getElementById("pctAuctionCost").value) / 100;
-      var pctBtwAuction = parseFloat(document.getElementById("pctBtwAuction").value) / 100;
-      return { pctBtwBid, pctAuctionCost, pctBtwAuction };
-    }
+            // --- WANDELINGEN (GROEN) ---
+            { rank: 1, type: 'hike', name: "Kew Mae Pan Nature Trail", lat: 18.5527, lng: 98.4801, price: "€ 5,50", desc: "Boven de wolken op Doi Inthanon." },
+            { rank: 2, type: 'hike', name: "Dragon Crest (Ngorn Nak)", lat: 8.0973, lng: 98.7494, price: "Gratis", desc: "Spectaculair uitzicht Krabi." },
+            { rank: 3, type: 'hike', name: "Monk's Trail (Wat Pha Lat)", lat: 18.7963, lng: 98.9435, price: "Gratis", desc: "Junglepad naar tempel." },
+            { rank: 4, type: 'hike', name: "Phraya Nakhon Cave", lat: 12.2059, lng: 100.0102, price: "€ 5,40", desc: "Grot met paviljoen." },
+            { rank: 5, type: 'hike', name: "Erawan Waterfalls", lat: 14.3755, lng: 99.1440, price: "€ 8,10", desc: "7 waterval niveaus." },
+            { rank: 8, type: 'hike', name: "Phu Chi Fa", lat: 19.8500, lng: 100.4460, price: "Gratis", desc: "Zonsopgang op klif." },
+            { rank: 9, type: 'hike', name: "Tiger Cave Temple (1237 treden)", lat: 8.1239, lng: 98.9251, price: "Gratis", desc: "Zware klim naar Boeddha." },
+            { rank: 13, type: 'hike', name: "Pai Canyon", lat: 19.3060, lng: 98.4526, price: "Gratis", desc: "Smalle zandrichels." },
+            { rank: 14, type: 'hike', name: "Sticky Waterfalls", lat: 19.0833, lng: 99.0833, price: "Gratis", desc: "In de waterval lopen." },
+            { rank: 27, type: 'hike', name: "Bang Kachao (Green Lung)", lat: 13.6828, lng: 100.5600, price: "Gratis", desc: "Fietsen/lopen in stad." },
 
-    function getQuantity() {
-      var quantity = parseFloat(document.getElementById("quantity").value);
-      if (isNaN(quantity) || quantity < 1) {
-        quantity = 1;
-      }
-      return quantity;
-    }
+            // --- TEST FILTER (Deze moet verdwijnen door NL filter) ---
+            { rank: 99, type: 'activity', name: "Thailand Smile Wellness", lat: 52.3862, lng: 4.8847, price: "€ 50,00", desc: "FOUT: In Amsterdam" }
+        ];
 
-    function calculateForward() {
-      var bid = parseFloat(document.getElementById("bidAmount").value);
-      var quantity = getQuantity();
-      var result = "";
-      if (!isNaN(bid)) {
-        var settings = getSettings();
-        var btwBied = bid * settings.pctBtwBid;
-        var veilingkosten = bid * settings.pctAuctionCost;
-        var btwVeilingkosten = veilingkosten * settings.pctBtwAuction;
-        var total = bid + btwBied + veilingkosten + btwVeilingkosten;
-        result += "<p>Btw op biedingswaarde (" + (settings.pctBtwBid * 100).toFixed(2) + "%): " + formatNumber(btwBied) + "</p>";
-        result += "<p>Veilingkosten (" + (settings.pctAuctionCost * 100).toFixed(2) + "%): " + formatNumber(veilingkosten) + "</p>";
-        result += "<p>Btw op veilingkosten (" + (settings.pctBtwAuction * 100).toFixed(2) + "%): " + formatNumber(btwVeilingkosten) + "</p>";
-        result += "<p><strong>Totale biedprijs: " + formatNumber(total) + "</strong></p>";
-        result += "<p>Totale biedprijs per stuk: " + formatNumber(total / quantity) + "</p>";
-      } else {
-        result = "Voer een geldig biedbedrag in.";
-      }
-      document.getElementById("forwardResult").innerHTML = result;
-    }
+        let markers = [];
 
-    function calculateReverse() {
-      var totalPricePerPiece = parseFloat(document.getElementById("totalPrice").value);
-      var quantity = getQuantity();
-      var result = "";
-      if (!isNaN(totalPricePerPiece)) {
-        var overallTotalPrice = totalPricePerPiece * quantity;
-        var settings = getSettings();
-        var factor = 1 + settings.pctBtwBid + settings.pctAuctionCost + (settings.pctAuctionCost * settings.pctBtwAuction);
-        var requiredBid = overallTotalPrice / factor;
-        var btwBied = requiredBid * settings.pctBtwBid;
-        var veilingkosten = requiredBid * settings.pctAuctionCost;
-        var btwVeilingkosten = veilingkosten * settings.pctBtwAuction;
-        var computedTotal = requiredBid + btwBied + veilingkosten + btwVeilingkosten;
-        result += "<p><strong>Benodigd totaal biedbedrag: <span id='requiredBidValue'>" + formatNumber(requiredBid) + "</span></strong> <button class='copy-button' onclick='copyRequiredBid()'>Kopieer</button></p>";
-        result += "<p>Benodigd biedbedrag per stuk: " + formatNumber(requiredBid / quantity) + "</p>";
-        result += "<p>Btw op biedingswaarde (" + (settings.pctBtwBid * 100).toFixed(2) + "%): " + formatNumber(btwBied) + "</p>";
-        result += "<p>Veilingkosten (" + (settings.pctAuctionCost * 100).toFixed(2) + "%): " + formatNumber(veilingkosten) + "</p>";
-        result += "<p>Btw op veilingkosten (" + (settings.pctBtwAuction * 100).toFixed(2) + "%): " + formatNumber(btwVeilingkosten) + "</p>";
-        result += "<p><strong>Totale biedprijs (totaal): " + formatNumber(computedTotal) + "</strong></p>";
-        result += "<p>(Factor: " + factor.toFixed(4) + ")</p>";
-      } else {
-        result = "Voer een geldige totale prijs per stuk in.";
-      }
-      document.getElementById("reverseResult").innerHTML = result;
-    }
+        // 3. Functie om markers te plaatsen
+        function renderMarkers() {
+            // Eerst oude markers verwijderen
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
 
-    function adjustBidAmount(delta) {
-      var bidInput = document.getElementById("bidAmount");
-      var currentVal = parseFloat(bidInput.value) || 0;
-      var newVal = currentVal + delta;
-      if (newVal < 0) newVal = 0;
-      bidInput.value = newVal.toFixed(2);
-      calculateAll();
-    }
+            // Filters ophalen
+            const showSight = document.querySelector('input[value="sight"]').checked;
+            const showFood = document.querySelector('input[value="food"]').checked;
+            const showAct = document.querySelector('input[value="activity"]').checked;
+            const showHike = document.querySelector('input[value="hike"]').checked;
+            const priceFilter = document.getElementById('priceFilter').value;
 
-    function adjustTotalPrice(delta) {
-      var totalPriceInput = document.getElementById("totalPrice");
-      var currentVal = parseFloat(totalPriceInput.value) || 0;
-      var newVal = currentVal + delta;
-      if (newVal < 0) newVal = 0;
-      totalPriceInput.value = newVal.toFixed(2);
-      calculateAll();
-    }
+            locations.forEach(loc => {
+                // A. Filter op Nederland/Buitenland (Grofweg Thailand bounds: Lat 5-21)
+                if (loc.lat < 5 || loc.lat > 21) return;
 
-    // Kopieer functie zonder popup
-    function copyRequiredBid() {
-      var textToCopy = document.getElementById("requiredBidValue").innerText;
-      navigator.clipboard.writeText(textToCopy).catch(function(err) {
-        console.error("Kopiëren mislukt:", err);
-      });
-    }
+                // B. Filter op Type
+                if (loc.type === 'sight' && !showSight) return;
+                if (loc.type === 'food' && !showFood) return;
+                if (loc.type === 'activity' && !showAct) return;
+                if (loc.type === 'hike' && !showHike) return;
 
-    function calculateAll() {
-      calculateReverse();
-      calculateForward();
-    }
+                // C. Filter op Prijs (Simpele logica)
+                if (priceFilter !== 'all') {
+                    if (priceFilter === 'free' && !loc.price.toLowerCase().includes('gratis')) return;
+                    if (priceFilter === 'cheap' && (loc.price.includes('€ 1') || loc.price.includes('€ 2') || loc.price.includes('€ 3'))) { /* OK */ } 
+                    else if (priceFilter === 'cheap' && !loc.price.toLowerCase().includes('gratis')) return;
+                    // Meer logica zou hier kunnen voor 'mid', etc.
+                }
 
-    // BTW Voorwaartse Berekening
-    function calculateBTWForward() {
-      var netto = parseFloat(document.getElementById("nettoAmount").value);
-      var vatPercent = parseFloat(document.getElementById("vatPercentage").value) / 100;
-      var result = "";
-      if (!isNaN(netto)) {
-        var vatAmount = netto * vatPercent;
-        var bruto = netto + vatAmount;
-        result += "<p>BTW bedrag: " + formatNumber(vatAmount) + "</p>";
-        result += "<p>Inclusief btw: " + formatNumber(bruto) + "</p>";
-      } else {
-        result = "Voer een geldig exclusief btw bedrag in.";
-      }
-      document.getElementById("vatForwardResult").innerHTML = result;
-    }
+                // Bepaal kleur en class
+                let cssClass = '';
+                if (loc.type === 'sight') cssClass = 'marker-sight';
+                if (loc.type === 'food') cssClass = 'marker-food';
+                if (loc.type === 'activity') cssClass = 'marker-act';
+                if (loc.type === 'hike') cssClass = 'marker-hike';
 
-    // BTW Omgekeerde Berekening
-    function calculateBTWReverse() {
-      var bruto = parseFloat(document.getElementById("brutoAmount").value);
-      var vatPercent = parseFloat(document.getElementById("vatPercentage2").value) / 100;
-      var result = "";
-      if (!isNaN(bruto)) {
-        var netto = bruto / (1 + vatPercent);
-        var vatAmount = bruto - netto;
-        result += "<p>Exclusief btw: " + formatNumber(netto) + "</p>";
-        result += "<p>BTW bedrag: " + formatNumber(vatAmount) + "</p>";
-      } else {
-        result = "Voer een geldig inclusief btw bedrag in.";
-      }
-      document.getElementById("vatReverseResult").innerHTML = result;
-    }
+                // Maak Custom Pin Icon
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div class="custom-pin ${cssClass}"><span>${loc.rank}</span></div>`,
+                    iconSize: [30, 42],
+                    iconAnchor: [15, 42],
+                    popupAnchor: [0, -40]
+                });
 
-    calculateAll();
-  </script>
+                // Maak Marker
+                const marker = L.marker([loc.lat, loc.lng], { icon: customIcon }).addTo(map);
+                
+                // Popup Inhoud
+                const popupContent = `
+                    <div class="popup-content">
+                        <div class="category">${getTypeName(loc.type)} - Nr. ${loc.rank}</div>
+                        <h3>${loc.name}</h3>
+                        <p>${loc.desc}</p>
+                        <div class="price">Prijs: ${loc.price}</div>
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}" target="_blank" class="popup-btn">🚗 Navigeer hierheen</a>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent);
+                markers.push(marker);
+            });
+        }
+
+        // Helper: Type naar leesbare naam
+        function getTypeName(type) {
+            if (type === 'sight') return 'Bezienswaardigheid';
+            if (type === 'food') return 'Eten & Drinken';
+            if (type === 'activity') return 'Activiteit';
+            if (type === 'hike') return 'Wandeling';
+            return type;
+        }
+
+        // 4. Locatie Functie
+        function locateUser() {
+            const statusDiv = document.getElementById('user-status');
+            if (!navigator.geolocation) {
+                statusDiv.innerText = "Geolocatie niet ondersteund.";
+                return;
+            }
+            statusDiv.innerText = "Locatie zoeken...";
+            navigator.geolocation.getCurrentPosition((position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                // Voeg user marker toe
+                L.marker([lat, lng]).addTo(map)
+                    .bindPopup("<b>Jij bent hier</b>").openPopup();
+                
+                map.setView([lat, lng], 10);
+                statusDiv.innerText = "";
+            }, () => {
+                statusDiv.innerText = "Kan locatie niet vinden.";
+            });
+        }
+
+        // 5. Event Listeners voor filters
+        document.querySelectorAll('input[type="checkbox"]').forEach(input => {
+            input.addEventListener('change', renderMarkers);
+        });
+        document.getElementById('priceFilter').addEventListener('change', renderMarkers);
+
+        // Start!
+        renderMarkers();
+
+    </script>
 </body>
 </html>

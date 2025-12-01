@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Thailand Ultimate Guide v13</title>
+    <title>Thailand Ultimate Guide v14</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -24,6 +24,18 @@
             transition: transform 0.2s;
         }
         #toggle-btn:active { transform: scale(0.95); }
+
+        /* --- RECENTER BUTTON (NIEUW) --- */
+        #recenter-btn {
+            position: absolute; bottom: 90px; right: 10px;
+            background: #fff; color: #333;
+            width: 44px; height: 44px; border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000; border: none;
+            font-size: 20px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #recenter-btn:active { background: #f0f0f0; }
 
         /* --- SIDEBAR --- */
         #controls {
@@ -108,6 +120,7 @@
 <body>
 
     <button id="toggle-btn" onclick="toggleMenu()">⚙️ Filters & Tools</button>
+    <button id="recenter-btn" onclick="locateUserOnMap()" title="Centreer op mijn locatie">🎯</button>
 
     <div id="controls">
         <div class="sidebar-header">
@@ -190,7 +203,7 @@
         </div>
 
         <div class="sidebar-footer">
-            <button class="loc-btn" onclick="locateUser()">📍 Mijn Locatie</button>
+            <button class="loc-btn" onclick="locateUserOnMap()">📍 Mijn Locatie</button>
             <div id="user-status" style="font-size: 11px; margin-top: 5px; color: #666; text-align: center;"></div>
         </div>
     </div>
@@ -204,8 +217,11 @@
     <script>
         // --- 1. INITIALISATIE ---
         const isMobile = window.innerWidth < 600;
+        // Start zoom als we nog geen GPS hebben (fallback op Thailand overzicht)
         const initialZoom = isMobile ? 5 : 6;
         const map = L.map('map', { zoomControl: false }).setView([13.0000, 101.5000], initialZoom);
+        
+        // Zoom knoppen rechtsonder
         L.control.zoom({ position: 'bottomright' }).addTo(map);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
@@ -224,25 +240,48 @@
         let userLat = null;
         let userLng = null;
         let userMarker = null;
+        let hasCenteredOnce = false; // Check of we al een keer automatisch gezoomd hebben
 
         if(localStorage.getItem('calc_thb')) document.getElementById('calcTHB').value = localStorage.getItem('calc_thb');
         if(localStorage.getItem('calc_eur')) document.getElementById('calcEUR').value = localStorage.getItem('calc_eur');
         updateRateDisplay(userRate);
 
-        // --- 4. GPS ---
+        // --- 4. GPS & LOCATIE ---
+        // Start direct met zoeken. setView: false omdat we dit handmatig doen voor betere controle
         map.locate({setView: false, watch: true, enableHighAccuracy: true});
 
         map.on('locationfound', function(e) {
             userLat = e.latlng.lat;
             userLng = e.latlng.lng;
+            
+            // Blauwe stip updaten
             if (!userMarker) {
                 userMarker = L.circleMarker(e.latlng, { radius: 8, fillColor: "#4285F4", color: "#ffffff", weight: 3, opacity: 1, fillOpacity: 1 }).addTo(map).bindPopup("Jouw Locatie");
             } else { userMarker.setLatLng(e.latlng); }
+            
+            // De EERSTE keer dat we locatie vinden: inzoomen naar radius ~20km (Zoom 11)
+            if (!hasCenteredOnce) {
+                map.setView([userLat, userLng], 11);
+                hasCenteredOnce = true;
+            }
+
             document.getElementById('user-status').innerText = "GPS Actief ✅";
             renderMarkers(); 
         });
+        
         map.on('locationerror', function(e) { document.getElementById('user-status').innerText = "GPS niet gevonden ❌"; });
-        function locateUser() { if(userLat && userLng) { map.setView([userLat, userLng], 10); } else { alert("Geen GPS signaal."); } }
+        
+        // Functie voor de nieuwe knop en de sidebar knop
+        function locateUserOnMap() { 
+            if(userLat && userLng) { 
+                map.setView([userLat, userLng], 11); // Forceer zoom 11 bij klikken
+            } else { 
+                alert("Nog geen GPS signaal. Zorg dat locatie aanstaat."); 
+                map.locate({setView: true, maxZoom: 11, enableHighAccuracy: true});
+            } 
+        }
+        // Oude sidebar functie kan verwijzen naar de nieuwe
+        function locateUser() { locateUserOnMap(); }
 
         // --- 5. CALCULATOR ---
         function calculateRate() {
@@ -295,28 +334,22 @@
             const regChecked = Array.from(document.querySelectorAll('input[name="reg"]:checked')).map(cb => cb.value);
             const tagChecked = Array.from(document.querySelectorAll('input[name="tag"]:checked')).map(cb => cb.value);
 
-            // PRIJS BEREKENEN (SLIM)
+            // PRIJS BEREKENEN
             const convertPrice = (loc) => {
-                // 1. Gratis check
                 if (loc.price_thb === 0) return '<span style="color:green">Gratis</span>';
                 if (typeof loc.price === 'string' && (loc.price.toLowerCase().includes('gratis') || loc.price.toLowerCase().includes('donatie'))) return '<span style="color:green">Gratis</span>';
 
                 let thbAmount = 0;
-
-                // 2. Nieuwe data (THB)
                 if (loc.price_thb !== undefined && loc.price_thb !== null) {
                     thbAmount = loc.price_thb;
-                } 
-                // 3. Oude data (Euro string) -> Reverse Engineering
-                else if (loc.price) {
+                } else if (loc.price) {
                     let euroStr = loc.price.replace(/[^0-9,.]/g, '').replace(',', '.');
                     let oldEuro = parseFloat(euroStr);
                     if (!isNaN(oldEuro)) {
-                        thbAmount = (oldEuro / 2.70) * 100; // Terugrekenen naar THB (basis: 2.70)
+                        thbAmount = (oldEuro / 2.70) * 100;
                     }
                 }
 
-                // 4. Reken om naar nieuwe User Rate
                 if (thbAmount > 0) {
                     let newEuroPrice = (thbAmount / 100) * userRate;
                     return `€ ${newEuroPrice.toFixed(2)}`;
@@ -333,7 +366,6 @@
                 if (!regChecked.includes(loc.region)) return;
                 if (!tagChecked.includes(loc.tag)) return;
 
-                // Price Filter Logic (Simplified for calc)
                 let displayPrice = convertPrice(loc);
                 if (priceFilter !== 'all') {
                     let isFree = displayPrice.includes('Gratis');
@@ -376,8 +408,9 @@
                 const favClass = isFav ? 'fav-active' : 'fav-inactive';
                 const priceColor = displayPrice.includes('Gratis') ? 'green' : '#333';
 
-                const navUrl = `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`;
-                const infoUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.name + " Thailand")}`;
+                // GECORRIGEERDE LINKS (template strings waren stuk in origineel)
+                const navUrl = `https://www.google.com/maps/dir/?api=1&destination=${loc.lat},${loc.lng}`;
+                const infoUrl = `https://www.google.com/search?q=${encodeURIComponent(loc.name + " Thailand")}`;
                 const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(loc.name + ' Thailand vlog')}`;
                 const wikiUrl = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(loc.name)}`;
 
